@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,10 +55,21 @@ interface Quotation {
   terms?: string;
 }
 
+interface FormItem {
+  productId: string;
+  productName: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  taxRate: number;
+  total: number;
+  product?: Product;
+}
+
 export default function EditQuotationPage() {
   const router = useRouter();
   const params = useParams();
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
@@ -79,6 +89,7 @@ export default function EditQuotationPage() {
       fetchCustomers();
       fetchProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   useEffect(() => {
@@ -110,7 +121,7 @@ export default function EditQuotationPage() {
       });
       setItems(updatedItems);
     }
-  }, [products]);
+  }, [products, items]);
 
   const formatDateForInput = (dateString: string | Date | null | undefined): string => {
     if (!dateString) return '';
@@ -129,7 +140,7 @@ export default function EditQuotationPage() {
     }
   };
 
-  const fetchQuotation = async () => {
+  const fetchQuotation = useCallback(async () => {
     try {
       const response = await fetch(`/api/quotations/${params.id}`);
       if (response.ok) {
@@ -149,7 +160,7 @@ export default function EditQuotationPage() {
           terms: data.terms || '',
         });
         // Ensure items have proper product data structure
-        const itemsWithProducts = (data.items || []).map((item: any) => {
+        const itemsWithProducts = (data.items || []).map((item: FormItem) => {
           // If item has productId but no product object, create a placeholder
           if (item.productId && !item.product) {
             return {
@@ -157,7 +168,7 @@ export default function EditQuotationPage() {
               product: { 
                 _id: item.productId, 
                 name: item.productName || '', 
-                price: item.price || item.unitPrice || 0, 
+                price: item.price || 0, 
                 unit: item.unit || '', 
                 taxRate: item.taxRate || 0 
               }
@@ -175,7 +186,7 @@ export default function EditQuotationPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   const fetchCustomers = async () => {
     try {
@@ -221,7 +232,7 @@ export default function EditQuotationPage() {
     setItems(newItems);
   };
 
-  const handleItemChange = (index: number, field: keyof QuotationItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof QuotationItem, value: string | number | Product) => {
     console.log('handleItemChange called:', { index, field, value, products: products.length });
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
@@ -403,7 +414,7 @@ export default function EditQuotationPage() {
               <div className="space-y-4">
                 {items.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    <p>No items added yet. Click "Add Item" to start.</p>
+                    <p>No items added yet. Click &quot;Add Item&quot; to start.</p>
                   </div>
                 )}
                 {items.map((item, index) => (

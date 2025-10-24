@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Edit, Trash2, Download, Send } from 'lucide-react';
 
 interface InvoiceItem {
@@ -48,7 +47,6 @@ interface Invoice {
 }
 
 export default function InvoiceDetailPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -58,9 +56,10 @@ export default function InvoiceDetailPage() {
     if (params.id) {
       fetchInvoice(params.id as string);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  const fetchInvoice = async (id: string) => {
+  const fetchInvoice = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/invoices/${id}`);
       if (response.ok) {
@@ -75,7 +74,7 @@ export default function InvoiceDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this invoice?')) {

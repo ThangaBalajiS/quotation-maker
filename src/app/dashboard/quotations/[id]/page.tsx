@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Edit, Trash2, Download, Send } from 'lucide-react';
 
 interface QuotationItem {
@@ -46,7 +45,6 @@ interface Quotation {
 }
 
 export default function QuotationDetailPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
   const [quotation, setQuotation] = useState<Quotation | null>(null);
@@ -56,9 +54,10 @@ export default function QuotationDetailPage() {
     if (params.id) {
       fetchQuotation(params.id as string);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  const fetchQuotation = async (id: string) => {
+  const fetchQuotation = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/quotations/${id}`);
       if (response.ok) {
@@ -73,7 +72,7 @@ export default function QuotationDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this quotation?')) {

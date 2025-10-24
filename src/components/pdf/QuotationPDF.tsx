@@ -261,6 +261,7 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         <View style={styles.header}>
           <View style={styles.logoSection}>
             {data.businessDetails.logo && (
+              // eslint-disable-next-line jsx-a11y/alt-text
               <Image style={styles.logo} src={data.businessDetails.logo} />
             )}
             <Text style={styles.companyName}>{data.businessDetails.businessName}</Text>

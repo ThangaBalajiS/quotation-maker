@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Quotation from '@/models/Quotation';
@@ -12,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -76,10 +77,12 @@ export async function GET(
     };
 
     // Generate PDF
-    const pdfBuffer = await pdf(QuotationPDF({ data: pdfData })).toBuffer();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfDoc = pdf(QuotationPDF({ data: pdfData }) as any);
+    const pdfStream = await pdfDoc.toBlob();
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfStream, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="quotation-${quotation.quotationNumber}.pdf"`,

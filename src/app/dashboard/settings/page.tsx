@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Save, Upload, Building2 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -288,10 +287,12 @@ export default function SettingsPage() {
                 </label>
                 <div className="flex items-center space-x-4">
                   {formData.logo && (
-                    <img
+                    <Image
                       src={formData.logo}
                       alt="Business Logo"
-                      className="h-20 w-20 object-contain border rounded"
+                      width={80}
+                      height={80}
+                      className="object-contain border rounded"
                     />
                   )}
                   <div>
@@ -322,10 +323,12 @@ export default function SettingsPage() {
                 </label>
                 <div className="flex items-center space-x-4">
                   {formData.signature && (
-                    <img
+                    <Image
                       src={formData.signature}
                       alt="Digital Signature"
-                      className="h-20 w-32 object-contain border rounded"
+                      width={128}
+                      height={80}
+                      className="object-contain border rounded"
                     />
                   )}
                   <div>

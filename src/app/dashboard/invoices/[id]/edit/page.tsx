@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +39,18 @@ interface InvoiceItem {
   total: number;
 }
 
+interface FormItem {
+  productId: string;
+  productName: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  taxRate: number;
+  total: number;
+  product?: Product;
+}
+
 interface Invoice {
   _id: string;
   invoiceNumber: string;
@@ -59,7 +70,6 @@ interface Invoice {
 export default function EditInvoicePage() {
   const router = useRouter();
   const params = useParams();
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -80,6 +90,7 @@ export default function EditInvoicePage() {
       fetchCustomers();
       fetchProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   useEffect(() => {
@@ -111,7 +122,7 @@ export default function EditInvoicePage() {
       });
       setItems(updatedItems);
     }
-  }, [products]);
+  }, [products, items]);
 
   const formatDateForInput = (dateString: string | Date | null | undefined): string => {
     if (!dateString) return '';
@@ -130,7 +141,7 @@ export default function EditInvoicePage() {
     }
   };
 
-  const fetchInvoice = async () => {
+  const fetchInvoice = useCallback(async () => {
     try {
       const response = await fetch(`/api/invoices/${params.id}`);
       if (response.ok) {
@@ -153,7 +164,7 @@ export default function EditInvoicePage() {
           terms: data.terms || '',
         });
         // Ensure items have proper product data structure
-        const itemsWithProducts = (data.items || []).map((item: any) => {
+        const itemsWithProducts = (data.items || []).map((item: FormItem) => {
           // If item has productId but no product object, create a placeholder
           if (item.productId && !item.product) {
             return {
@@ -161,7 +172,7 @@ export default function EditInvoicePage() {
               product: { 
                 _id: item.productId, 
                 name: item.productName || '', 
-                price: item.price || item.unitPrice || 0, 
+                price: item.price || 0, 
                 unit: item.unit || '', 
                 taxRate: item.taxRate || 0 
               }
@@ -179,7 +190,7 @@ export default function EditInvoicePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   const fetchCustomers = async () => {
     try {
@@ -223,7 +234,7 @@ export default function EditInvoicePage() {
     setItems(newItems);
   };
 
-  const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number | Product) => {
     console.log('handleItemChange called:', { index, field, value, products: products.length });
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
@@ -416,7 +427,7 @@ export default function EditInvoicePage() {
               <div className="space-y-4">
                 {items.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    <p>No items added yet. Click "Add Item" to start.</p>
+                    <p>No items added yet. Click &quot;Add Item&quot; to start.</p>
                   </div>
                 )}
                 {items.map((item, index) => (

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
-import Invoice from '@/models/Invoice';
+import Invoice, { IInvoiceItem } from '@/models/Invoice';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -44,7 +45,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -63,8 +64,8 @@ export async function PUT(
     await connectDB();
 
     // Calculate totals
-    const subtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-    const taxAmount = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
+    const subtotal = items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity), 0);
+    const taxAmount = items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
     const total = subtotal + taxAmount;
 
     const invoice = await Invoice.findOneAndUpdate(
@@ -75,7 +76,7 @@ export async function PUT(
         customerEmail,
         customerPhone,
         customerAddress,
-        items: items.map((item: any) => ({
+        items: items.map((item: IInvoiceItem) => ({
           ...item,
           total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
         })),
@@ -112,7 +113,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

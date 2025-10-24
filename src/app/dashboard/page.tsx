@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Package, FileText, Receipt, TrendingUp, DollarSign } from 'lucide-react';
+import { Users, Package, FileText, Receipt } from 'lucide-react';
 
 export default function Dashboard() {
   const { data: session } = useSession();
@@ -69,7 +69,7 @@ export default function Dashboard() {
             Welcome back, {session?.user?.name}!
           </h1>
           <p className="text-gray-600 text-sm lg:text-base">
-            Here's what's happening with your business today.
+            Here&apos;s what&apos;s happening with your business today.
           </p>
         </div>
 
