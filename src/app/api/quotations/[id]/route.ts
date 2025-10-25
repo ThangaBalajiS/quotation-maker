@@ -52,7 +52,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status } = body;
+    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status, quotationDate } = body;
 
     if (!customerId || !customerName || !items || !validUntil) {
       return NextResponse.json(
@@ -77,13 +77,18 @@ export async function PUT(
         customerPhone,
         customerAddress,
         items: items.map((item: IQuotationItem) => ({
-          ...item,
-          total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          taxRate: item.taxRate,
+          total: item.price * item.quantity,
         })),
         subtotal,
         taxAmount,
         total,
         validUntil: new Date(validUntil),
+        quotationDate: quotationDate ? new Date(quotationDate) : undefined,
         notes,
         terms,
         status: status || 'sent',

@@ -19,6 +19,13 @@ export interface IUser extends Document {
     signature?: string;
     phone?: string;
     email?: string;
+    bankDetails?: {
+      accountName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branch?: string;
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -90,6 +97,28 @@ const UserSchema = new Schema<IUser>({
     email: {
       type: String,
       default: '',
+    },
+    bankDetails: {
+      accountName: {
+        type: String,
+        default: '',
+      },
+      accountNumber: {
+        type: String,
+        default: '',
+      },
+      ifscCode: {
+        type: String,
+        default: '',
+      },
+      bankName: {
+        type: String,
+        default: '',
+      },
+      branch: {
+        type: String,
+        default: '',
+      },
     },
   },
 }, {

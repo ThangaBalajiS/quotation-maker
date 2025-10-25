@@ -37,7 +37,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { businessName, gstNumber, phone, email, address, logo, signature } = body;
+    const { businessName, gstNumber, phone, email, address, logo, signature, bankDetails } = body;
+    
 
     if (!businessName) {
       return NextResponse.json(
@@ -51,14 +52,15 @@ export async function PUT(request: NextRequest) {
     const user = await User.findOneAndUpdate(
       { tenantId: session.user.tenantId },
       {
-        businessDetails: {
-          businessName,
-          gstNumber,
-          phone,
-          email,
-          address,
-          logo,
-          signature,
+        $set: {
+          'businessDetails.businessName': businessName,
+          'businessDetails.gstNumber': gstNumber,
+          'businessDetails.phone': phone,
+          'businessDetails.email': email,
+          'businessDetails.address': address,
+          'businessDetails.logo': logo,
+          'businessDetails.signature': signature,
+          'businessDetails.bankDetails': bankDetails,
         },
       },
       { new: true }

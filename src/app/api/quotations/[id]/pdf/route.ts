@@ -73,6 +73,7 @@ export async function GET(
         gstNumber: user.businessDetails?.gstNumber,
         logo: user.businessDetails?.logo,
         signature: user.businessDetails?.signature,
+        bankDetails: user.businessDetails?.bankDetails,
       },
     };
 

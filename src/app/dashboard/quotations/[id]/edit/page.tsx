@@ -100,10 +100,10 @@ export default function EditQuotationPage() {
     console.log('Items updated:', items);
   }, [items]);
 
-  // Update items when products are loaded
+  // Update items with product data when both quotation and products are loaded
   useEffect(() => {
-    if (products.length > 0 && items.length > 0) {
-      console.log('Products loaded, updating items with product data');
+    if (quotation && products.length > 0 && items.length > 0) {
+      console.log('Both quotation and products loaded, updating items with product data');
       const updatedItems = items.map(item => {
         if (item.product?._id && item.product._id !== '') {
           const product = products.find(p => p._id === item.product._id);
@@ -119,9 +119,22 @@ export default function EditQuotationPage() {
         }
         return item;
       });
-      setItems(updatedItems);
+      
+      // Only update if there are actual changes
+      const hasChanges = updatedItems.some((item, index) => {
+        const original = items[index];
+        return item.unitPrice !== original.unitPrice || 
+               item.taxRate !== original.taxRate ||
+               item.product._id !== original.product._id;
+      });
+      
+      if (hasChanges) {
+        console.log('Updating items with product data');
+        setItems(updatedItems);
+      }
     }
-  }, [products, items]);
+  }, [quotation, products]); // Depend on quotation and products, not items
+
 
   const formatDateForInput = (dateString: string | Date | null | undefined): string => {
     if (!dateString) return '';
@@ -235,6 +248,7 @@ export default function EditQuotationPage() {
   const handleItemChange = (index: number, field: keyof QuotationItem, value: string | number | Product) => {
     console.log('handleItemChange called:', { index, field, value, products: products.length });
     const newItems = [...items];
+    const oldItem = { ...newItems[index] };
     newItems[index] = { ...newItems[index], [field]: value };
     
     if (field === 'product') {
@@ -254,7 +268,19 @@ export default function EditQuotationPage() {
     }
     
     // Recalculate total (base amount without tax)
-    newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
+    const newTotal = (newItems[index].quantity || 0) * (newItems[index].unitPrice || 0);
+    newItems[index].total = newTotal;
+    
+    console.log('Item change summary:', {
+      field,
+      oldValue: oldItem[field],
+      newValue: value,
+      oldTotal: oldItem.total,
+      newTotal: newTotal,
+      quantity: newItems[index].quantity,
+      unitPrice: newItems[index].unitPrice
+    });
+    
     setItems(newItems);
   };
 
@@ -287,8 +313,8 @@ export default function EditQuotationPage() {
       const quotationData = {
         customerId: formData.customerId,
         customerName: selectedCustomer?.name || '',
-        quotationDate: new Date(quotation?.quotationDate || new Date()),
-        validUntil: new Date(formData.validUntil),
+        quotationDate: quotation?.quotationDate || new Date(),
+        validUntil: formData.validUntil,
         items: items.map(item => ({
           productId: item.product._id,
           productName: item.product.name,
@@ -445,7 +471,11 @@ export default function EditQuotationPage() {
                           type="number"
                           min="1"
                           value={item.quantity || 1}
-                          onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                          onChange={(e) => {
+                            const newQuantity = parseInt(e.target.value) || 1;
+                            console.log('Quantity changing from', item.quantity, 'to', newQuantity);
+                            handleItemChange(index, 'quantity', newQuantity);
+                          }}
                         />
                       </div>
                       <div>
