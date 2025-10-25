@@ -39,6 +39,13 @@ interface QuotationData {
     gstNumber?: string;
     logo?: string;
     signature?: string;
+    bankDetails?: {
+      accountName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      branch?: string;
+    };
   };
 }
 
@@ -57,8 +64,13 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     flexDirection: 'column',
+    alignItems: 'flex-end',
+    width: '30%',
+  },
+  companySection: {
+    flexDirection: 'column',
     alignItems: 'flex-start',
-    width: '40%',
+    width: '60%',
   },
   logo: {
     width: 80,
@@ -104,7 +116,7 @@ const styles = StyleSheet.create({
   },
   quotationDetails: {
     alignItems: 'flex-end',
-    width: '30%',
+    width: '40%',
   },
   quotationNumber: {
     fontSize: 12,
@@ -238,6 +250,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     marginBottom: 5,
   },
+  signatureImage: {
+    width: 120,
+    height: 60,
+    marginBottom: 5,
+  },
   signatureLabel: {
     fontSize: 8,
     color: '#6b7280',
@@ -259,11 +276,7 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoSection}>
-            {data.businessDetails.logo && (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <Image style={styles.logo} src={data.businessDetails.logo} />
-            )}
+          <View style={styles.companySection}>
             <Text style={styles.companyName}>{data.businessDetails.businessName}</Text>
             {data.businessDetails.contactPerson && (
               <Text style={styles.contactPerson}>{data.businessDetails.contactPerson}</Text>
@@ -346,17 +359,32 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         <View style={styles.footer}>
           <View style={styles.paymentSection}>
             <Text style={styles.paymentTitle}>Payment Instructions</Text>
-            <Text style={styles.paymentInfo}>Acc. Name: {data.businessDetails.businessName}</Text>
-            <Text style={styles.paymentInfo}>Acc No: [Your Account Number]</Text>
-            <Text style={styles.paymentInfo}>IFSC Code: [Your IFSC Code]</Text>
-            <Text style={styles.paymentInfo}>Bank: [Your Bank Name]</Text>
-            <Text style={styles.paymentInfo}>Branch: [Your Branch]</Text>
+            <Text style={styles.paymentInfo}>Acc. Name: {data.businessDetails.bankDetails?.accountName || data.businessDetails.businessName}</Text>
+            {data.businessDetails.bankDetails?.accountNumber && (
+              <Text style={styles.paymentInfo}>Acc No: {data.businessDetails.bankDetails.accountNumber}</Text>
+            )}
+            {data.businessDetails.bankDetails?.ifscCode && (
+              <Text style={styles.paymentInfo}>IFSC Code: {data.businessDetails.bankDetails.ifscCode}</Text>
+            )}
+            {data.businessDetails.bankDetails?.bankName && (
+              <Text style={styles.paymentInfo}>Bank: {data.businessDetails.bankDetails.bankName}</Text>
+            )}
+            {data.businessDetails.bankDetails?.branch && (
+              <Text style={styles.paymentInfo}>Branch: {data.businessDetails.bankDetails.branch}</Text>
+            )}
           </View>
           <View style={styles.signatureSection}>
             <Text style={styles.signatureText}>
               For, {data.businessDetails.businessName}
             </Text>
-            <View style={styles.signatureLine} />
+            {data.businessDetails.signature ? (
+              <Image 
+                style={styles.signatureImage} 
+                src={data.businessDetails.signature} 
+              />
+            ) : (
+              <View style={styles.signatureLine} />
+            )}
             <Text style={styles.signatureLabel}>AUTHORIZED SIGNATURE</Text>
           </View>
         </View>
