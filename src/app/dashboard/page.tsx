@@ -1,42 +1,66 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Package, FileText, Receipt } from 'lucide-react';
 
+interface DashboardStats {
+  customers: { count: number; change: number };
+  products: { count: number; change: number };
+  quotations: { count: number; change: number };
+  invoices: { count: number; change: number };
+}
+
 export default function Dashboard() {
   const { data: session } = useSession();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/dashboard/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const statCards = [
     {
       name: 'Total Customers',
-      value: '0',
+      value: loading ? '...' : stats?.customers.count.toString() ?? '0',
       icon: Users,
-      change: '+0%',
-      changeType: 'positive',
+      change: stats?.customers.change ?? 0,
     },
     {
       name: 'Total Products',
-      value: '0',
+      value: loading ? '...' : stats?.products.count.toString() ?? '0',
       icon: Package,
-      change: '+0%',
-      changeType: 'positive',
+      change: stats?.products.change ?? 0,
     },
     {
       name: 'Total Quotations',
-      value: '0',
+      value: loading ? '...' : stats?.quotations.count.toString() ?? '0',
       icon: FileText,
-      change: '+0%',
-      changeType: 'positive',
+      change: stats?.quotations.change ?? 0,
     },
     {
       name: 'Total Invoices',
-      value: '0',
+      value: loading ? '...' : stats?.invoices.count.toString() ?? '0',
       icon: Receipt,
-      change: '+0%',
-      changeType: 'positive',
+      change: stats?.invoices.change ?? 0,
     },
   ];
 
@@ -75,7 +99,7 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {stats.map((stat) => (
+          {statCards.map((stat) => (
             <Card key={stat.name}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -86,7 +110,9 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">{stat.change}</span> from last month
+                  <span className={stat.change >= 0 ? "text-green-600" : "text-red-600"}>
+                    {stat.change >= 0 ? '+' : ''}{stat.change}%
+                  </span> from last month
                 </p>
               </CardContent>
             </Card>

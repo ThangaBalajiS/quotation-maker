@@ -191,11 +191,10 @@ export default function SettingsPage() {
         </div>
 
         {message && (
-          <div className={`p-4 rounded-md ${
-            message.includes('successfully') 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+          <div className={`p-4 rounded-md ${message.includes('successfully')
+            ? 'bg-green-50 text-green-800 border border-green-200'
+            : 'bg-red-50 text-red-800 border border-red-200'
+            }`}>
             {message}
           </div>
         )}
@@ -316,7 +315,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Branding */}
-          <Card>
+          {/*   <Card>
             <CardHeader>
               <CardTitle>Branding</CardTitle>
               <CardDescription>
@@ -424,7 +423,7 @@ export default function SettingsPage() {
                 </p>
               </div>
             </CardContent>
-          </Card>
+          </Card>*/}
 
           {/* Bank Details */}
           <Card>
