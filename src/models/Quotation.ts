@@ -82,8 +82,7 @@ const QuotationSchema = new Schema<IQuotation>({
   },
   quotationNumber: {
     type: String,
-    required: true,
-    unique: true,
+    required: true
   },
   customerId: {
     type: String,
