@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "setup": "node setup-env.js"
+    "setup": "node setup-env.js",
+    "postinstall": "npm rebuild sharp"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",
