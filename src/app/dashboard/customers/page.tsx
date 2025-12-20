@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Customer {
   _id: string;
@@ -62,39 +63,50 @@ export default function CustomersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const customerData = {
-        name: formData.name,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          country: formData.country,
-        },
-        gstNumber: formData.gstNumber || undefined,
-      };
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const customerData = {
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: {
+            street: formData.street,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            country: formData.country,
+          },
+          gstNumber: formData.gstNumber || undefined,
+        };
 
-      const url = editingCustomer ? `/api/customers/${editingCustomer._id}` : '/api/customers';
-      const method = editingCustomer ? 'PUT' : 'POST';
+        const url = editingCustomer ? `/api/customers/${editingCustomer._id}` : '/api/customers';
+        const method = editingCustomer ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(customerData),
-      });
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(customerData),
+        });
 
-      if (response.ok) {
-        fetchCustomers();
-        resetForm();
+        if (response.ok) {
+          fetchCustomers();
+          resetForm();
+          resolve(editingCustomer ? 'Customer updated successfully' : 'Customer added successfully');
+        } else {
+          reject(editingCustomer ? 'Failed to update customer' : 'Failed to add customer');
+        }
+      } catch (error) {
+        reject('Error saving customer');
       }
-    } catch (error) {
-      console.error('Error saving customer:', error);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: editingCustomer ? 'Updating customer...' : 'Adding customer...',
+      success: (data) => `${data}`,
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const handleEdit = (customer: Customer) => {
@@ -115,16 +127,27 @@ export default function CustomersPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this customer?')) {
-      try {
-        const response = await fetch(`/api/customers/${id}`, {
-          method: 'DELETE',
-        });
-        if (response.ok) {
-          fetchCustomers();
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch(`/api/customers/${id}`, {
+            method: 'DELETE',
+          });
+          if (response.ok) {
+            fetchCustomers();
+            resolve('Customer deleted successfully');
+          } else {
+            reject('Failed to delete customer');
+          }
+        } catch (error) {
+          reject('Error deleting customer');
         }
-      } catch (error) {
-        console.error('Error deleting customer:', error);
-      }
+      });
+
+      toast.promise(promise, {
+        loading: 'Deleting customer...',
+        success: 'Customer deleted successfully',
+        error: (err) => `Error: ${err}`,
+      });
     }
   };
 

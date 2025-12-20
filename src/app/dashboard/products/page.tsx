@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Product {
   _id: string;
@@ -56,35 +57,46 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const productData = {
-        name: formData.name,
-        description: formData.description || undefined,
-        price: parseFloat(formData.price),
-        unit: formData.unit,
-        hsnCode: formData.hsnCode || undefined,
-        taxRate: parseFloat(formData.taxRate),
-        isActive: formData.isActive,
-      };
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const productData = {
+          name: formData.name,
+          description: formData.description || undefined,
+          price: parseFloat(formData.price),
+          unit: formData.unit,
+          hsnCode: formData.hsnCode || undefined,
+          taxRate: parseFloat(formData.taxRate),
+          isActive: formData.isActive,
+        };
 
-      const url = editingProduct ? `/api/products/${editingProduct._id}` : '/api/products';
-      const method = editingProduct ? 'PUT' : 'POST';
+        const url = editingProduct ? `/api/products/${editingProduct._id}` : '/api/products';
+        const method = editingProduct ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      });
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        });
 
-      if (response.ok) {
-        fetchProducts();
-        resetForm();
+        if (response.ok) {
+          fetchProducts();
+          resetForm();
+          resolve(editingProduct ? 'Product updated successfully' : 'Product added successfully');
+        } else {
+          reject(editingProduct ? 'Failed to update product' : 'Failed to add product');
+        }
+      } catch (error) {
+        reject('Error saving product');
       }
-    } catch (error) {
-      console.error('Error saving product:', error);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: editingProduct ? 'Updating product...' : 'Adding product...',
+      success: (data) => `${data}`,
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const handleEdit = (product: Product) => {
@@ -103,34 +115,56 @@ export default function ProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
-      try {
-        const response = await fetch(`/api/products/${id}`, {
-          method: 'DELETE',
-        });
-        if (response.ok) {
-          fetchProducts();
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch(`/api/products/${id}`, {
+            method: 'DELETE',
+          });
+          if (response.ok) {
+            fetchProducts();
+            resolve('Product deleted successfully');
+          } else {
+            reject('Failed to delete product');
+          }
+        } catch (error) {
+          reject('Error deleting product');
         }
-      } catch (error) {
-        console.error('Error deleting product:', error);
-      }
+      });
+
+      toast.promise(promise, {
+        loading: 'Deleting product...',
+        success: 'Product deleted successfully',
+        error: (err) => `Error: ${err}`,
+      });
     }
   };
 
   const toggleActive = async (id: string, isActive: boolean) => {
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
-      if (response.ok) {
-        fetchProducts();
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/products/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ isActive: !isActive }),
+        });
+        if (response.ok) {
+          fetchProducts();
+          resolve(`Product ${isActive ? 'deactivated' : 'activated'} successfully`);
+        } else {
+          reject('Failed to update product status');
+        }
+      } catch (error) {
+        reject('Error updating product status');
       }
-    } catch (error) {
-      console.error('Error toggling product status:', error);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Updating status...',
+      success: (data) => `${data}`,
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const resetForm = () => {
@@ -358,11 +392,10 @@ export default function ProductsPage() {
                     <span className="text-gray-600">Status:</span>
                     <button
                       onClick={() => toggleActive(product._id, product.isActive)}
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        product.isActive
+                      className={`px-2 py-1 rounded text-xs font-medium ${product.isActive
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}
+                        }`}
                     >
                       {product.isActive ? 'Active' : 'Inactive'}
                     </button>

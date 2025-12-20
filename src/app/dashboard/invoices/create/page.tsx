@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Customer {
   _id: string;
@@ -143,46 +144,60 @@ export default function CreateInvoicePage() {
 
     setSaving(true);
 
-    try {
-      const customer = customers.find(c => c._id === formData.customerId);
-      if (!customer) return;
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const customer = customers.find(c => c._id === formData.customerId);
+        if (!customer) {
+          reject('Customer not found');
+          return;
+        }
 
-      const { subtotal, taxAmount, total } = calculateTotals();
+        const { subtotal, taxAmount, total } = calculateTotals();
 
-      const invoiceData = {
-        customerId: formData.customerId,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        customerAddress: customer.address,
-        items: items.map(item => ({
-          ...item,
-          total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
-        })),
-        subtotal,
-        taxAmount,
-        total,
-        dueDate: formData.dueDate,
-        notes: formData.notes,
-        terms: formData.terms,
-      };
+        const invoiceData = {
+          customerId: formData.customerId,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          customerAddress: customer.address,
+          items: items.map(item => ({
+            ...item,
+            total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
+          })),
+          subtotal,
+          taxAmount,
+          total,
+          dueDate: formData.dueDate,
+          notes: formData.notes,
+          terms: formData.terms,
+        };
 
-      const response = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceData),
-      });
+        const response = await fetch('/api/invoices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invoiceData),
+        });
 
-      if (response.ok) {
-        router.push('/dashboard/invoices');
+        if (response.ok) {
+          resolve('Invoice created successfully');
+          router.push('/dashboard/invoices');
+        } else {
+          reject('Failed to create invoice');
+        }
+      } catch (error) {
+        reject('Error creating invoice');
+      } finally {
+        setSaving(false);
       }
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-    } finally {
-      setSaving(false);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating invoice...',
+      success: 'Invoice created successfully',
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const { subtotal, taxAmount, total } = calculateTotals();
