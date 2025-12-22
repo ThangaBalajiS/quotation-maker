@@ -6,6 +6,17 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Receipt, Eye, Edit, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 interface Invoice {
   _id: string;
@@ -21,6 +32,7 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInvoices();
@@ -40,19 +52,36 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this invoice?')) {
+  const handleDeleteClick = (id: string) => {
+    setInvoiceToDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!invoiceToDelete) return;
+
+    const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`/api/invoices/${id}`, {
+        const response = await fetch(`/api/invoices/${invoiceToDelete}`, {
           method: 'DELETE',
         });
         if (response.ok) {
           fetchInvoices();
+          resolve('Invoice deleted successfully');
+        } else {
+          reject('Failed to delete invoice');
         }
       } catch (error) {
-        console.error('Error deleting invoice:', error);
+        reject('Error deleting invoice');
+      } finally {
+        setInvoiceToDelete(null);
       }
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting invoice...',
+      success: 'Invoice deleted successfully',
+      error: 'Error deleting invoice',
+    });
   };
 
   const handleView = (id: string) => {
@@ -124,8 +153,8 @@ export default function InvoicesPage() {
                       {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                     </span>
                     <div className="flex space-x-1">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleView(invoice._id)}
                         title="View invoice"
@@ -133,8 +162,8 @@ export default function InvoicesPage() {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleEdit(invoice._id)}
                         title="Edit invoice"
@@ -142,12 +171,12 @@ export default function InvoicesPage() {
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => handleDelete(invoice._id)}
+                        onClick={() => handleDeleteClick(invoice._id)}
                         title="Delete invoice"
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -180,6 +209,24 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!invoiceToDelete} onOpenChange={() => setInvoiceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the invoice
+              and remove it from your records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

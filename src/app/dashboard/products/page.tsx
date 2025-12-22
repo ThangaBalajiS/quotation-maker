@@ -8,6 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 interface Product {
   _id: string;
   name: string;
@@ -26,6 +37,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -113,30 +125,36 @@ export default function ProductsPage() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      const promise = new Promise(async (resolve, reject) => {
-        try {
-          const response = await fetch(`/api/products/${id}`, {
-            method: 'DELETE',
-          });
-          if (response.ok) {
-            fetchProducts();
-            resolve('Product deleted successfully');
-          } else {
-            reject('Failed to delete product');
-          }
-        } catch (error) {
-          reject('Error deleting product');
-        }
-      });
+  const handleDeleteClick = (id: string) => {
+    setProductToDelete(id);
+  };
 
-      toast.promise(promise, {
-        loading: 'Deleting product...',
-        success: 'Product deleted successfully',
-        error: (err) => `Error: ${err}`,
-      });
-    }
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/products/${productToDelete}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          fetchProducts();
+          resolve('Product deleted successfully');
+        } else {
+          reject('Failed to delete product');
+        }
+      } catch (error) {
+        reject('Error deleting product');
+      } finally {
+        setProductToDelete(null);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting product...',
+      success: 'Product deleted successfully',
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const toggleActive = async (id: string, isActive: boolean) => {
@@ -365,8 +383,8 @@ export default function ProductsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(product._id)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => handleDeleteClick(product._id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -393,8 +411,8 @@ export default function ProductsPage() {
                     <button
                       onClick={() => toggleActive(product._id, product.isActive)}
                       className={`px-2 py-1 rounded text-xs font-medium ${product.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                         }`}
                     >
                       {product.isActive ? 'Active' : 'Inactive'}
@@ -411,6 +429,24 @@ export default function ProductsPage() {
             <p className="text-gray-500">No products found</p>
           </div>
         )}
+
+        <AlertDialog open={!!productToDelete} onOpenChange={() => setProductToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the product
+                and remove it from your catalog.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

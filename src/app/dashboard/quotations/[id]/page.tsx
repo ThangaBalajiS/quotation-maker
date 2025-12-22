@@ -6,6 +6,17 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Edit, Trash2, Download, Send } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 interface QuotationItem {
   productId: string;
@@ -49,6 +60,7 @@ export default function QuotationDetailPage() {
   const params = useParams();
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -75,18 +87,33 @@ export default function QuotationDetailPage() {
   }, [router]);
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this quotation?')) {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    const promise = new Promise(async (resolve, reject) => {
       try {
         const response = await fetch(`/api/quotations/${params.id}`, {
           method: 'DELETE',
         });
         if (response.ok) {
+          resolve('Quotation deleted successfully');
           router.push('/dashboard/quotations');
+        } else {
+          reject('Failed to delete quotation');
         }
       } catch (error) {
-        console.error('Error deleting quotation:', error);
+        reject('Error deleting quotation');
+      } finally {
+        setShowDeleteDialog(false);
       }
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting quotation...',
+      success: 'Quotation deleted successfully',
+      error: 'Error deleting quotation',
+    });
   };
 
   const handleDownloadPDF = async () => {
@@ -177,6 +204,7 @@ export default function QuotationDetailPage() {
             <Button
               variant="outline"
               onClick={handleDelete}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
@@ -318,6 +346,23 @@ export default function QuotationDetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this quotation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </DashboardLayout >
   );
 }

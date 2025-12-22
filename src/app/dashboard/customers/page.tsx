@@ -8,6 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 interface Customer {
   _id: string;
   name: string;
@@ -30,6 +41,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -125,30 +137,36 @@ export default function CustomersPage() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this customer?')) {
-      const promise = new Promise(async (resolve, reject) => {
-        try {
-          const response = await fetch(`/api/customers/${id}`, {
-            method: 'DELETE',
-          });
-          if (response.ok) {
-            fetchCustomers();
-            resolve('Customer deleted successfully');
-          } else {
-            reject('Failed to delete customer');
-          }
-        } catch (error) {
-          reject('Error deleting customer');
-        }
-      });
+  const handleDeleteClick = (id: string) => {
+    setCustomerToDelete(id);
+  };
 
-      toast.promise(promise, {
-        loading: 'Deleting customer...',
-        success: 'Customer deleted successfully',
-        error: (err) => `Error: ${err}`,
-      });
-    }
+  const handleConfirmDelete = async () => {
+    if (!customerToDelete) return;
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/customers/${customerToDelete}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          fetchCustomers();
+          resolve('Customer deleted successfully');
+        } else {
+          reject('Failed to delete customer');
+        }
+      } catch (error) {
+        reject('Error deleting customer');
+      } finally {
+        setCustomerToDelete(null);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting customer...',
+      success: 'Customer deleted successfully',
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const resetForm = () => {
@@ -350,8 +368,8 @@ export default function CustomersPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(customer._id)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => handleDeleteClick(customer._id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -384,6 +402,24 @@ export default function CustomersPage() {
             <p className="text-gray-500">No customers found</p>
           </div>
         )}
+
+        <AlertDialog open={!!customerToDelete} onOpenChange={() => setCustomerToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the customer
+                and remove their data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
