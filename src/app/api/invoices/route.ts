@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, dueDate, quotationId } = body;
+    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, dueDate, quotationId, includeGst = true } = body;
 
     if (!customerId || !customerName || !items || !dueDate) {
       return NextResponse.json(
@@ -50,9 +50,11 @@ export async function POST(request: NextRequest) {
     const count = await Invoice.countDocuments({ tenantId: session.user.tenantId });
     const invoiceNumber = `INV-${String(count + 1).padStart(4, '0')}`;
 
-    // Calculate totals
+    // Calculate totals (respect includeGst flag)
     const subtotal = items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity), 0);
-    const taxAmount = items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
+    const taxAmount = includeGst
+      ? items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity * item.taxRate / 100), 0)
+      : 0;
     const total = subtotal + taxAmount;
 
     const invoice = new Invoice({
@@ -65,11 +67,14 @@ export async function POST(request: NextRequest) {
       customerAddress,
       items: items.map((item: IInvoiceItem) => ({
         ...item,
-        total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
+        total: includeGst
+          ? item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100)
+          : item.price * item.quantity,
       })),
       subtotal,
       taxAmount,
       total,
+      includeGst,
       dueDate: new Date(dueDate),
       notes,
       terms,

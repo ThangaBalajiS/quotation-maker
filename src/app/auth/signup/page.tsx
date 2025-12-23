@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import bcrypt from 'bcryptjs';
+import { toast } from 'sonner';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -12,7 +13,6 @@ export default function SignUp() {
     password: '',
     confirmPassword: '',
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -25,15 +25,13 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
@@ -57,13 +55,14 @@ export default function SignUp() {
       });
 
       if (response.ok) {
-        router.push('/auth/signin?message=Account created successfully');
+        toast.success('Account created successfully');
+        router.push('/auth/signin');
       } else {
         const data = await response.json();
-        setError(data.error || 'An error occurred');
+        toast.error(data.error || 'An error occurred');
       }
     } catch {
-      setError('An error occurred. Please try again.');
+      toast.error('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -148,9 +147,7 @@ export default function SignUp() {
             </div>
           </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
+
 
           <div>
             <button

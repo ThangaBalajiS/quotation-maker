@@ -6,6 +6,17 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, FileText, Eye, Edit, Trash2, Download, Copy } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 interface Quotation {
   _id: string;
@@ -21,6 +32,8 @@ export default function QuotationsPage() {
   const router = useRouter();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quotationToDelete, setQuotationToDelete] = useState<string | null>(null);
+  const [quotationToDuplicate, setQuotationToDuplicate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuotations();
@@ -40,19 +53,36 @@ export default function QuotationsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this quotation?')) {
+  const handleDeleteClick = (id: string) => {
+    setQuotationToDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!quotationToDelete) return;
+
+    const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`/api/quotations/${id}`, {
+        const response = await fetch(`/api/quotations/${quotationToDelete}`, {
           method: 'DELETE',
         });
         if (response.ok) {
           fetchQuotations();
+          resolve('Quotation deleted successfully');
+        } else {
+          reject('Failed to delete quotation');
         }
       } catch (error) {
-        console.error('Error deleting quotation:', error);
+        reject('Error deleting quotation');
+      } finally {
+        setQuotationToDelete(null);
       }
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting quotation...',
+      success: 'Quotation deleted successfully',
+      error: 'Error deleting quotation',
+    });
   };
 
   const handleView = (id: string) => {
@@ -84,21 +114,36 @@ export default function QuotationsPage() {
     }
   };
 
-  const handleDuplicate = async (id: string) => {
-    if (confirm('Are you sure you want to duplicate this quotation?')) {
+  const handleDuplicateClick = (id: string) => {
+    setQuotationToDuplicate(id);
+  };
+
+  const handleConfirmDuplicate = async () => {
+    if (!quotationToDuplicate) return;
+
+    const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`/api/quotations/${id}/duplicate`, {
+        const response = await fetch(`/api/quotations/${quotationToDuplicate}/duplicate`, {
           method: 'POST',
         });
         if (response.ok) {
           fetchQuotations();
+          resolve('Quotation duplicated successfully');
         } else {
-          console.error('Error duplicating quotation');
+          reject('Failed to duplicate quotation');
         }
       } catch (error) {
-        console.error('Error duplicating quotation:', error);
+        reject('Error duplicating quotation');
+      } finally {
+        setQuotationToDuplicate(null);
       }
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Duplicating quotation...',
+      success: 'Quotation duplicated successfully',
+      error: 'Error duplicating quotation',
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -160,8 +205,8 @@ export default function QuotationsPage() {
                       {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
                     </span>
                     <div className="flex space-x-1">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleView(quotation._id)}
                         title="View quotation"
@@ -169,8 +214,8 @@ export default function QuotationsPage() {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleEdit(quotation._id)}
                         title="Edit quotation"
@@ -178,8 +223,8 @@ export default function QuotationsPage() {
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => handleDownloadPDF(quotation._id, quotation.quotationNumber)}
                         title="Download PDF"
@@ -187,21 +232,21 @@ export default function QuotationsPage() {
                       >
                         <Download className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => handleDuplicate(quotation._id)}
+                        onClick={() => handleDuplicateClick(quotation._id)}
                         title="Duplicate quotation"
                         className="h-8 w-8 p-0"
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => handleDelete(quotation._id)}
+                        onClick={() => handleDeleteClick(quotation._id)}
                         title="Delete quotation"
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -234,6 +279,40 @@ export default function QuotationsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+
+      <AlertDialog open={!!quotationToDelete} onOpenChange={() => setQuotationToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the quotation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!quotationToDuplicate} onOpenChange={() => setQuotationToDuplicate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate Quotation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to create a copy of this quotation? A new quotation will be created with Draft status.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDuplicate}>
+              Duplicate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </DashboardLayout >
   );
 }

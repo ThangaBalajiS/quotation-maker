@@ -6,6 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Customer {
   _id: string;
@@ -29,6 +41,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -62,39 +75,50 @@ export default function CustomersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const customerData = {
-        name: formData.name,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          country: formData.country,
-        },
-        gstNumber: formData.gstNumber || undefined,
-      };
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const customerData = {
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: {
+            street: formData.street,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            country: formData.country,
+          },
+          gstNumber: formData.gstNumber || undefined,
+        };
 
-      const url = editingCustomer ? `/api/customers/${editingCustomer._id}` : '/api/customers';
-      const method = editingCustomer ? 'PUT' : 'POST';
+        const url = editingCustomer ? `/api/customers/${editingCustomer._id}` : '/api/customers';
+        const method = editingCustomer ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(customerData),
-      });
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(customerData),
+        });
 
-      if (response.ok) {
-        fetchCustomers();
-        resetForm();
+        if (response.ok) {
+          fetchCustomers();
+          resetForm();
+          resolve(editingCustomer ? 'Customer updated successfully' : 'Customer added successfully');
+        } else {
+          reject(editingCustomer ? 'Failed to update customer' : 'Failed to add customer');
+        }
+      } catch (error) {
+        reject('Error saving customer');
       }
-    } catch (error) {
-      console.error('Error saving customer:', error);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: editingCustomer ? 'Updating customer...' : 'Adding customer...',
+      success: (data) => `${data}`,
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const handleEdit = (customer: Customer) => {
@@ -113,19 +137,36 @@ export default function CustomersPage() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this customer?')) {
+  const handleDeleteClick = (id: string) => {
+    setCustomerToDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!customerToDelete) return;
+
+    const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`/api/customers/${id}`, {
+        const response = await fetch(`/api/customers/${customerToDelete}`, {
           method: 'DELETE',
         });
         if (response.ok) {
           fetchCustomers();
+          resolve('Customer deleted successfully');
+        } else {
+          reject('Failed to delete customer');
         }
       } catch (error) {
-        console.error('Error deleting customer:', error);
+        reject('Error deleting customer');
+      } finally {
+        setCustomerToDelete(null);
       }
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting customer...',
+      success: 'Customer deleted successfully',
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const resetForm = () => {
@@ -327,8 +368,8 @@ export default function CustomersPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(customer._id)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => handleDeleteClick(customer._id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -361,6 +402,24 @@ export default function CustomersPage() {
             <p className="text-gray-500">No customers found</p>
           </div>
         )}
+
+        <AlertDialog open={!!customerToDelete} onOpenChange={() => setCustomerToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the customer
+                and remove their data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

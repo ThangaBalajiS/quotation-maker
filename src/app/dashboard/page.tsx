@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Package, FileText, Receipt } from 'lucide-react';
 
 interface DashboardStats {
@@ -40,25 +41,25 @@ export default function Dashboard() {
   const statCards = [
     {
       name: 'Total Customers',
-      value: loading ? '...' : stats?.customers.count.toString() ?? '0',
+      value: loading ? <Skeleton className="h-8 w-[60px]" /> : stats?.customers.count.toString() ?? '0',
       icon: Users,
       change: stats?.customers.change ?? 0,
     },
     {
       name: 'Total Products',
-      value: loading ? '...' : stats?.products.count.toString() ?? '0',
+      value: loading ? <Skeleton className="h-8 w-[60px]" /> : stats?.products.count.toString() ?? '0',
       icon: Package,
       change: stats?.products.change ?? 0,
     },
     {
       name: 'Total Quotations',
-      value: loading ? '...' : stats?.quotations.count.toString() ?? '0',
+      value: loading ? <Skeleton className="h-8 w-[60px]" /> : stats?.quotations.count.toString() ?? '0',
       icon: FileText,
       change: stats?.quotations.change ?? 0,
     },
     {
       name: 'Total Invoices',
-      value: loading ? '...' : stats?.invoices.count.toString() ?? '0',
+      value: loading ? <Skeleton className="h-8 w-[60px]" /> : stats?.invoices.count.toString() ?? '0',
       icon: Receipt,
       change: stats?.invoices.change ?? 0,
     },

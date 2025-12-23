@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Customer {
   _id: string;
@@ -62,6 +63,7 @@ export default function CreateInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+  const [includeGst, setIncludeGst] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -73,6 +75,21 @@ export default function CreateInvoicePage() {
       dueDate: defaultDueDate.toISOString().split('T')[0],
     }));
   }, []);
+
+  // Recalculate item totals when includeGst changes
+  useEffect(() => {
+    if (items.length > 0) {
+      const updatedItems = items.map(item => {
+        const baseTotal = item.price * item.quantity;
+        return {
+          ...item,
+          total: includeGst ? baseTotal + (baseTotal * item.taxRate / 100) : baseTotal,
+        };
+      });
+      setItems(updatedItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeGst]);
 
   const fetchData = async () => {
     try {
@@ -103,6 +120,7 @@ export default function CreateInvoicePage() {
     const product = products.find(p => p._id === selectedProduct);
     if (!product) return;
 
+    const baseTotal = product.price * itemQuantity;
     const newItem: InvoiceItem = {
       productId: product._id,
       productName: product.name,
@@ -111,7 +129,7 @@ export default function CreateInvoicePage() {
       unit: product.unit,
       price: product.price,
       taxRate: product.taxRate,
-      total: product.price * itemQuantity + (product.price * itemQuantity * product.taxRate / 100),
+      total: includeGst ? baseTotal + (baseTotal * product.taxRate / 100) : baseTotal,
     };
 
     setItems([...items, newItem]);
@@ -126,13 +144,18 @@ export default function CreateInvoicePage() {
   const updateItemQuantity = (index: number, quantity: number) => {
     const updatedItems = [...items];
     updatedItems[index].quantity = quantity;
-    updatedItems[index].total = updatedItems[index].price * quantity + (updatedItems[index].price * quantity * updatedItems[index].taxRate / 100);
+    const baseTotal = updatedItems[index].price * quantity;
+    updatedItems[index].total = includeGst
+      ? baseTotal + (baseTotal * updatedItems[index].taxRate / 100)
+      : baseTotal;
     setItems(updatedItems);
   };
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const taxAmount = items.reduce((sum, item) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
+    const taxAmount = includeGst
+      ? items.reduce((sum, item) => sum + (item.price * item.quantity * item.taxRate / 100), 0)
+      : 0;
     const total = subtotal + taxAmount;
     return { subtotal, taxAmount, total };
   };
@@ -143,46 +166,63 @@ export default function CreateInvoicePage() {
 
     setSaving(true);
 
-    try {
-      const customer = customers.find(c => c._id === formData.customerId);
-      if (!customer) return;
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const customer = customers.find(c => c._id === formData.customerId);
+        if (!customer) {
+          reject('Customer not found');
+          return;
+        }
 
-      const { subtotal, taxAmount, total } = calculateTotals();
+        const { subtotal, taxAmount, total } = calculateTotals();
 
-      const invoiceData = {
-        customerId: formData.customerId,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        customerAddress: customer.address,
-        items: items.map(item => ({
-          ...item,
-          total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
-        })),
-        subtotal,
-        taxAmount,
-        total,
-        dueDate: formData.dueDate,
-        notes: formData.notes,
-        terms: formData.terms,
-      };
+        const invoiceData = {
+          customerId: formData.customerId,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          customerAddress: customer.address,
+          items: items.map(item => ({
+            ...item,
+            total: includeGst
+              ? item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100)
+              : item.price * item.quantity,
+          })),
+          subtotal,
+          taxAmount,
+          total,
+          includeGst,
+          dueDate: formData.dueDate,
+          notes: formData.notes,
+          terms: formData.terms,
+        };
 
-      const response = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceData),
-      });
+        const response = await fetch('/api/invoices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invoiceData),
+        });
 
-      if (response.ok) {
-        router.push('/dashboard/invoices');
+        if (response.ok) {
+          resolve('Invoice created successfully');
+          router.push('/dashboard/invoices');
+        } else {
+          reject('Failed to create invoice');
+        }
+      } catch (error) {
+        reject('Error creating invoice');
+      } finally {
+        setSaving(false);
       }
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-    } finally {
-      setSaving(false);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating invoice...',
+      success: 'Invoice created successfully',
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   const { subtotal, taxAmount, total } = calculateTotals();
@@ -252,6 +292,18 @@ export default function CreateInvoicePage() {
                       onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                       required
                     />
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="includeGst"
+                      checked={includeGst}
+                      onChange={(e) => setIncludeGst(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="includeGst" className="text-sm font-medium text-gray-700">
+                      Include GST/Tax in this invoice
+                    </label>
                   </div>
                 </div>
               </CardContent>
@@ -339,9 +391,11 @@ export default function CreateInvoicePage() {
                           <div className="text-sm text-gray-600">
                             Price: ₹{item.price} per {item.unit}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            Tax: {item.taxRate}%
-                          </div>
+                          {includeGst && (
+                            <div className="text-sm text-gray-600">
+                              Tax: {item.taxRate}%
+                            </div>
+                          )}
                           <div className="font-medium">
                             Total: ₹{item.total.toFixed(2)}
                           </div>
@@ -374,10 +428,18 @@ export default function CreateInvoicePage() {
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Tax Amount:</span>
-                    <span>₹{taxAmount.toFixed(2)}</span>
-                  </div>
+                  {includeGst && (
+                    <div className="flex justify-between">
+                      <span>Tax Amount:</span>
+                      <span>₹{taxAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {!includeGst && (
+                    <div className="flex justify-between text-gray-500 text-sm">
+                      <span>GST:</span>
+                      <span>Not included</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
                     <span>₹{total.toFixed(2)}</span>

@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Save, Upload, Building2, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
+import { toast } from 'sonner';
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -72,55 +73,60 @@ export default function SettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
 
-    try {
-      const businessDetails = {
-        businessName: formData.businessName,
-        gstNumber: formData.gstNumber || undefined,
-        phone: formData.phone || undefined,
-        email: formData.email || undefined,
-        address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          country: formData.country,
-        },
-        logo: formData.logo || undefined,
-        signature: formData.signature || undefined,
-        bankDetails: {
-          accountName: formData.accountName || undefined,
-          accountNumber: formData.accountNumber || undefined,
-          ifscCode: formData.ifscCode || undefined,
-          bankName: formData.bankName || undefined,
-          branch: formData.branch || undefined,
-        },
-      };
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const businessDetails = {
+          businessName: formData.businessName,
+          gstNumber: formData.gstNumber || undefined,
+          phone: formData.phone || undefined,
+          email: formData.email || undefined,
+          address: {
+            street: formData.street,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            country: formData.country,
+          },
+          logo: formData.logo || undefined,
+          signature: formData.signature || undefined,
+          bankDetails: {
+            accountName: formData.accountName || undefined,
+            accountNumber: formData.accountNumber || undefined,
+            ifscCode: formData.ifscCode || undefined,
+            bankName: formData.bankName || undefined,
+            branch: formData.branch || undefined,
+          },
+        };
 
-      const response = await fetch('/api/business-settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(businessDetails),
-      });
+        const response = await fetch('/api/business-settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(businessDetails),
+        });
 
-      if (response.ok) {
-        setMessage('Business details updated successfully!');
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage('Error updating business details');
+        if (response.ok) {
+          resolve('Business details updated successfully!');
+        } else {
+          reject('Error updating business details');
+        }
+      } catch (error) {
+        reject('Error saving business details');
+      } finally {
+        setSaving(false);
       }
-    } catch (error) {
-      console.error('Error saving business details:', error);
-      setMessage('Error updating business details');
-    } finally {
-      setSaving(false);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Saving settings...',
+      success: 'Business details updated successfully!',
+      error: 'Error updating business details',
+    });
   };
 
-  const handleFileUpload = async (file: File, type: 'logo' | 'signature') => {
+  const promise = new Promise(async (resolve, reject) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -137,39 +143,49 @@ export default function SettingsPage() {
           ...prev,
           [type]: data.imageUrl,
         }));
-        setMessage(`${type === 'logo' ? 'Logo' : 'Signature'} uploaded successfully!`);
-        setTimeout(() => setMessage(''), 3000);
+        resolve(`${type === 'logo' ? 'Logo' : 'Signature'} uploaded successfully!`);
       } else {
         const errorData = await response.json();
-        setMessage(`Error: ${errorData.error}`);
+        reject(errorData.error || 'Upload failed');
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setMessage('Error uploading file');
+      reject('Error uploading file');
     }
-  };
+  });
+
+  toast.promise(promise, {
+    loading: 'Uploading...',
+    success: (data) => `${data}`,
+    error: (err) => `Error: ${err}`,
+  });
 
   const handleDeleteImage = async (type: 'logo' | 'signature') => {
-    try {
-      const response = await fetch(`/api/upload/image?type=${type}`, {
-        method: 'DELETE',
-      });
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/upload/image?type=${type}`, {
+          method: 'DELETE',
+        });
 
-      if (response.ok) {
-        setFormData(prev => ({
-          ...prev,
-          [type]: '',
-        }));
-        setMessage(`${type === 'logo' ? 'Logo' : 'Signature'} deleted successfully!`);
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        const errorData = await response.json();
-        setMessage(`Error: ${errorData.error}`);
+        if (response.ok) {
+          setFormData(prev => ({
+            ...prev,
+            [type]: '',
+          }));
+          resolve(`${type === 'logo' ? 'Logo' : 'Signature'} deleted successfully!`);
+        } else {
+          const errorData = await response.json();
+          reject(errorData.error || 'Delete failed');
+        }
+      } catch (error) {
+        reject('Error deleting image');
       }
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      setMessage('Error deleting image');
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Deleting...',
+      success: (data) => `${data}`,
+      error: (err) => `Error: ${err}`,
+    });
   };
 
   if (loading) {
@@ -190,14 +206,7 @@ export default function SettingsPage() {
           <p className="text-gray-600">Manage your business information and branding</p>
         </div>
 
-        {message && (
-          <div className={`p-4 rounded-md ${message.includes('successfully')
-            ? 'bg-green-50 text-green-800 border border-green-200'
-            : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
-            {message}
-          </div>
-        )}
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}

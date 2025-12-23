@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Customer {
   _id: string;
@@ -45,8 +46,21 @@ interface QuotationItem {
   total: number;
 }
 
+interface PresetItem {
+  productId: string;
+  productName: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  taxRate: number;
+}
+
 export default function CreateQuotationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const presetId = searchParams.get('presetId');
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,17 +76,42 @@ export default function CreateQuotationPage() {
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+  const [includeGst, setIncludeGst] = useState(true);
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Recalculate item totals when includeGst changes
+  useEffect(() => {
+    if (items.length > 0) {
+      const updatedItems = items.map(item => {
+        const baseTotal = item.price * item.quantity;
+        return {
+          ...item,
+          total: includeGst ? baseTotal + (baseTotal * item.taxRate / 100) : baseTotal,
+        };
+      });
+      setItems(updatedItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeGst]);
 
   const fetchData = async () => {
     try {
-      const [customersRes, productsRes] = await Promise.all([
+      const fetches: Promise<Response>[] = [
         fetch('/api/customers'),
         fetch('/api/products'),
-      ]);
+      ];
+
+      // If presetId is provided, also fetch the preset
+      if (presetId) {
+        fetches.push(fetch(`/api/presets/${presetId}`));
+      }
+
+      const responses = await Promise.all(fetches);
+      const [customersRes, productsRes, presetRes] = responses;
 
       if (customersRes.ok) {
         const customersData = await customersRes.json();
@@ -83,6 +122,26 @@ export default function CreateQuotationPage() {
         const productsData = await productsRes.json();
         setProducts(productsData.filter((p: Product) => p.isActive));
       }
+
+      // If preset was fetched, populate items
+      if (presetRes && presetRes.ok) {
+        const presetData = await presetRes.json();
+        const presetItems: QuotationItem[] = presetData.items.map((item: PresetItem) => {
+          const baseTotal = item.price * item.quantity;
+          return {
+            productId: item.productId,
+            productName: item.productName,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: item.price,
+            taxRate: item.taxRate,
+            total: includeGst ? baseTotal + (baseTotal * item.taxRate / 100) : baseTotal,
+          };
+        });
+        setItems(presetItems);
+        toast.success(`Loaded preset: ${presetData.name}`);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -90,12 +149,14 @@ export default function CreateQuotationPage() {
     }
   };
 
+
   const addItem = () => {
     if (!selectedProduct || itemQuantity <= 0) return;
 
     const product = products.find(p => p._id === selectedProduct);
     if (!product) return;
 
+    const baseTotal = product.price * itemQuantity;
     const newItem: QuotationItem = {
       productId: product._id,
       productName: product.name,
@@ -104,7 +165,7 @@ export default function CreateQuotationPage() {
       unit: product.unit,
       price: product.price,
       taxRate: product.taxRate,
-      total: product.price * itemQuantity + (product.price * itemQuantity * product.taxRate / 100),
+      total: includeGst ? baseTotal + (baseTotal * product.taxRate / 100) : baseTotal,
     };
 
     setItems([...items, newItem]);
@@ -119,13 +180,46 @@ export default function CreateQuotationPage() {
   const updateItemQuantity = (index: number, quantity: number) => {
     const updatedItems = [...items];
     updatedItems[index].quantity = quantity;
-    updatedItems[index].total = updatedItems[index].price * quantity + (updatedItems[index].price * quantity * updatedItems[index].taxRate / 100);
+    const baseTotal = updatedItems[index].price * quantity;
+    updatedItems[index].total = includeGst
+      ? baseTotal + (baseTotal * updatedItems[index].taxRate / 100)
+      : baseTotal;
+    setItems(updatedItems);
+  };
+
+  const updateItemPrice = (index: number, price: number) => {
+    const updatedItems = [...items];
+    updatedItems[index].price = price;
+    const quantity = updatedItems[index].quantity;
+    const taxRate = updatedItems[index].taxRate;
+    const baseTotal = price * quantity;
+    updatedItems[index].total = includeGst ? baseTotal + (baseTotal * taxRate / 100) : baseTotal;
+    setItems(updatedItems);
+  };
+
+  const updateItemTotal = (index: number, total: number) => {
+    const updatedItems = [...items];
+    updatedItems[index].total = total;
+    const quantity = updatedItems[index].quantity;
+    const taxRate = updatedItems[index].taxRate;
+    // Calculate price from total
+    if (includeGst) {
+      // total = price * qty * (1 + taxRate/100)
+      // So price = total / (qty * (1 + taxRate/100))
+      const price = total / (quantity * (1 + taxRate / 100));
+      updatedItems[index].price = Math.round(price * 100) / 100;
+    } else {
+      // total = price * qty
+      updatedItems[index].price = Math.round((total / quantity) * 100) / 100;
+    }
     setItems(updatedItems);
   };
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const taxAmount = items.reduce((sum, item) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
+    const taxAmount = includeGst
+      ? items.reduce((sum, item) => sum + (item.price * item.quantity * item.taxRate / 100), 0)
+      : 0;
     const total = subtotal + taxAmount;
     return { subtotal, taxAmount, total };
   };
@@ -136,46 +230,64 @@ export default function CreateQuotationPage() {
 
     setSaving(true);
 
-    try {
-      const customer = customers.find(c => c._id === formData.customerId);
-      if (!customer) return;
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const customer = customers.find(c => c._id === formData.customerId);
+        if (!customer) {
+          reject('Customer not found');
+          return;
+        }
 
-      const { subtotal, taxAmount, total } = calculateTotals();
+        const { subtotal, taxAmount, total } = calculateTotals();
 
-      const quotationData = {
-        customerId: formData.customerId,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        customerAddress: customer.address,
-        items: items.map(item => ({
-          ...item,
-          total: item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100),
-        })),
-        subtotal,
-        taxAmount,
-        total,
-        validUntil: formData.validUntil,
-        notes: formData.notes,
-        terms: formData.terms,
-      };
+        const quotationData = {
+          customerId: formData.customerId,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          customerAddress: customer.address,
+          items: items.map(item => ({
+            ...item,
+            total: includeGst
+              ? item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100)
+              : item.price * item.quantity,
+          })),
+          subtotal,
+          taxAmount,
+          total,
+          includeGst,
+          validUntil: formData.validUntil,
+          notes: formData.notes,
+          terms: formData.terms,
+        };
 
-      const response = await fetch('/api/quotations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(quotationData),
-      });
+        const response = await fetch('/api/quotations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(quotationData),
+        });
 
-      if (response.ok) {
-        router.push('/dashboard/quotations');
+        if (response.ok) {
+          resolve('Quotation created successfully');
+          router.push('/dashboard/quotations');
+        } else {
+          reject('Failed to create quotation');
+        }
+      } catch (error) {
+        reject('Error creating quotation');
+      } finally {
+        setSaving(false);
       }
-    } catch (error) {
-      console.error('Error creating quotation:', error);
-    } finally {
-      setSaving(false);
-    }
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating quotation...',
+      success: 'Quotation created successfully',
+      error: (err) => `Error: ${err}`,
+    });
+
   };
 
   const { subtotal, taxAmount, total } = calculateTotals();
@@ -245,6 +357,18 @@ export default function CreateQuotationPage() {
                       onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
                       required
                     />
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="includeGst"
+                      checked={includeGst}
+                      onChange={(e) => setIncludeGst(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="includeGst" className="text-sm font-medium text-gray-700">
+                      Include GST/Tax in this quotation
+                    </label>
                   </div>
                 </div>
               </CardContent>
@@ -318,9 +442,9 @@ export default function CreateQuotationPage() {
                         {item.description && (
                           <p className="text-sm text-gray-600">{item.description}</p>
                         )}
-                        <div className="flex items-center space-x-4 mt-2">
-                          <div>
-                            <label className="text-sm text-gray-600">Quantity:</label>
+                        <div className="flex flex-wrap items-center gap-4 mt-2">
+                          <div className="flex items-center">
+                            <label className="text-sm text-gray-600">Qty:</label>
                             <Input
                               type="number"
                               min="1"
@@ -329,14 +453,32 @@ export default function CreateQuotationPage() {
                               className="w-20 ml-2"
                             />
                           </div>
-                          <div className="text-sm text-gray-600">
-                            Price: ₹{item.price} per {item.unit}
+                          <div className="flex items-center">
+                            <label className="text-sm text-gray-600">Price/Unit (₹):</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateItemPrice(index, Number(e.target.value))}
+                              className="w-24 ml-2"
+                            />
                           </div>
-                          <div className="text-sm text-gray-600">
-                            Tax: {item.taxRate}%
-                          </div>
-                          <div className="font-medium">
-                            Total: ₹{item.total.toFixed(2)}
+                          {includeGst && (
+                            <div className="text-sm text-gray-600">
+                              Tax: {item.taxRate}%
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <label className="text-sm font-medium">Total (₹):</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={Math.round(item.total * 100) / 100}
+                              onChange={(e) => updateItemTotal(index, Number(e.target.value))}
+                              className="w-28 ml-2"
+                            />
                           </div>
                         </div>
                       </div>
@@ -367,10 +509,18 @@ export default function CreateQuotationPage() {
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Tax Amount:</span>
-                    <span>₹{taxAmount.toFixed(2)}</span>
-                  </div>
+                  {includeGst && (
+                    <div className="flex justify-between">
+                      <span>Tax Amount:</span>
+                      <span>₹{taxAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {!includeGst && (
+                    <div className="flex justify-between text-gray-500 text-sm">
+                      <span>GST:</span>
+                      <span>Not included</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
                     <span>₹{total.toFixed(2)}</span>
