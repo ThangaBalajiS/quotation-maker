@@ -82,6 +82,7 @@ export default function EditQuotationPage() {
     terms: '',
   });
   const [items, setItems] = useState<QuotationItem[]>([]);
+  const [includeGst, setIncludeGst] = useState(true);
 
   useEffect(() => {
     if (params.id) {
@@ -119,21 +120,36 @@ export default function EditQuotationPage() {
         }
         return item;
       });
-      
+
       // Only update if there are actual changes
       const hasChanges = updatedItems.some((item, index) => {
         const original = items[index];
-        return item.unitPrice !== original.unitPrice || 
-               item.taxRate !== original.taxRate ||
-               item.product._id !== original.product._id;
+        return item.unitPrice !== original.unitPrice ||
+          item.taxRate !== original.taxRate ||
+          item.product._id !== original.product._id;
       });
-      
+
       if (hasChanges) {
         console.log('Updating items with product data');
         setItems(updatedItems);
       }
     }
   }, [quotation, products]); // Depend on quotation and products, not items
+
+  // Recalculate item totals when includeGst changes
+  useEffect(() => {
+    if (items.length > 0) {
+      const updatedItems = items.map(item => {
+        const baseTotal = (item.quantity || 0) * (item.unitPrice || 0);
+        return {
+          ...item,
+          total: baseTotal, // Base total without tax (tax is calculated in summary)
+        };
+      });
+      setItems(updatedItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeGst]);
 
 
   const formatDateForInput = (dateString: string | Date | null | undefined): string => {
@@ -161,11 +177,11 @@ export default function EditQuotationPage() {
         console.log('Quotation data loaded:', data);
         console.log('Valid until raw:', data.validUntil);
         setQuotation(data);
-        
+
         const formattedValidUntil = formatDateForInput(data.validUntil);
-        
+
         console.log('Formatted valid until:', formattedValidUntil);
-        
+
         setFormData({
           customerId: data.customerId || data.customer?._id || '',
           validUntil: formattedValidUntil,
@@ -178,12 +194,12 @@ export default function EditQuotationPage() {
           if (item.productId && !item.product) {
             return {
               ...item,
-              product: { 
-                _id: item.productId, 
-                name: item.productName || '', 
-                price: item.price || 0, 
-                unit: item.unit || '', 
-                taxRate: item.taxRate || 0 
+              product: {
+                _id: item.productId,
+                name: item.productName || '',
+                price: item.price || 0,
+                unit: item.unit || '',
+                taxRate: item.taxRate || 0
               }
             };
           }
@@ -193,6 +209,7 @@ export default function EditQuotationPage() {
           };
         });
         setItems(itemsWithProducts);
+        setIncludeGst(data.includeGst !== false); // Default to true if not set
       }
     } catch (error) {
       console.error('Error fetching quotation:', error);
@@ -250,7 +267,7 @@ export default function EditQuotationPage() {
     const newItems = [...items];
     const oldItem = { ...newItems[index] };
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     if (field === 'product') {
       const product = products.find(p => p._id === value);
       console.log('Product found:', product);
@@ -265,22 +282,28 @@ export default function EditQuotationPage() {
         newItems[index].taxRate = 0;
         newItems[index].product = { _id: '', name: '', price: 0, unit: '', taxRate: 0 };
       }
+      // Recalculate total when product changes
+      newItems[index].total = (newItems[index].quantity || 0) * (newItems[index].unitPrice || 0);
+    } else if (field === 'total') {
+      // When total is changed, recalculate unitPrice
+      const quantity = newItems[index].quantity || 1;
+      const newUnitPrice = (value as number) / quantity;
+      newItems[index].unitPrice = Math.round(newUnitPrice * 100) / 100; // Round to 2 decimals
+    } else if (field === 'quantity' || field === 'unitPrice') {
+      // Recalculate total when quantity or unitPrice changes
+      newItems[index].total = (newItems[index].quantity || 0) * (newItems[index].unitPrice || 0);
     }
-    
-    // Recalculate total (base amount without tax)
-    const newTotal = (newItems[index].quantity || 0) * (newItems[index].unitPrice || 0);
-    newItems[index].total = newTotal;
-    
+
     console.log('Item change summary:', {
       field,
       oldValue: oldItem[field],
       newValue: value,
       oldTotal: oldItem.total,
-      newTotal: newTotal,
+      newTotal: newItems[index].total,
       quantity: newItems[index].quantity,
       unitPrice: newItems[index].unitPrice
     });
-    
+
     setItems(newItems);
   };
 
@@ -290,13 +313,15 @@ export default function EditQuotationPage() {
       const baseAmount = (item.quantity || 0) * (item.unitPrice || 0);
       return sum + baseAmount;
     }, 0);
-    
-    // Calculate tax amount for each item based on base amount
-    const taxAmount = items.reduce((sum, item) => {
-      const baseAmount = (item.quantity || 0) * (item.unitPrice || 0);
-      return sum + (baseAmount * (item.taxRate || 0) / 100);
-    }, 0);
-    
+
+    // Calculate tax amount for each item based on base amount (only if GST included)
+    const taxAmount = includeGst
+      ? items.reduce((sum, item) => {
+        const baseAmount = (item.quantity || 0) * (item.unitPrice || 0);
+        return sum + (baseAmount * (item.taxRate || 0) / 100);
+      }, 0)
+      : 0;
+
     const total = subtotal + taxAmount;
     return { subtotal, taxAmount, total };
   };
@@ -309,7 +334,7 @@ export default function EditQuotationPage() {
     try {
       const { subtotal, taxAmount, total } = calculateTotals();
       const selectedCustomer = customers.find(c => c._id === formData.customerId);
-      
+
       const quotationData = {
         customerId: formData.customerId,
         customerName: selectedCustomer?.name || '',
@@ -321,11 +346,14 @@ export default function EditQuotationPage() {
           quantity: item.quantity,
           price: item.unitPrice,
           taxRate: item.taxRate,
-          total: item.total,
+          total: includeGst
+            ? item.total + (item.total * (item.taxRate || 0) / 100)
+            : item.total,
         })),
         subtotal,
         taxAmount,
         total,
+        includeGst,
         notes: formData.notes,
         terms: formData.terms,
       };
@@ -428,6 +456,18 @@ export default function EditQuotationPage() {
                   />
                 </div>
               </div>
+              <div className="flex items-center space-x-3 mt-4">
+                <input
+                  type="checkbox"
+                  id="includeGst"
+                  checked={includeGst}
+                  onChange={(e) => setIncludeGst(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="includeGst" className="text-sm font-medium text-gray-700">
+                  Include GST/Tax in this quotation
+                </label>
+              </div>
             </CardContent>
           </Card>
 
@@ -489,28 +529,41 @@ export default function EditQuotationPage() {
                           onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tax Rate (%)
-                        </label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.taxRate || 0}
-                          onChange={(e) => handleItemChange(index, 'taxRate', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
+                      {includeGst && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tax Rate (%)
+                          </label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.taxRate || 0}
+                            onChange={(e) => handleItemChange(index, 'taxRate', parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2">
-                        <div className="text-sm">
-                          <p className="font-medium">Base: ₹{(item.total || 0).toFixed(2)}</p>
-                          <p className="text-xs text-gray-500">Tax: ₹{((item.total || 0) * (item.taxRate || 0) / 100).toFixed(2)}</p>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Total (₹)
+                          </label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={Math.round((item.total || 0) * 100) / 100}
+                            onChange={(e) => handleItemChange(index, 'total', parseFloat(e.target.value) || 0)}
+                            className="w-28"
+                          />
+                          {includeGst && (
+                            <p className="text-xs text-gray-500 mt-1">+Tax: ₹{((item.total || 0) * (item.taxRate || 0) / 100).toFixed(2)}</p>
+                          )}
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => handleRemoveItem(index)}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 mt-4"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -541,10 +594,18 @@ export default function EditQuotationPage() {
                   <span>Subtotal:</span>
                   <span>₹{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Tax:</span>
-                  <span>₹{taxAmount.toFixed(2)}</span>
-                </div>
+                {includeGst && (
+                  <div className="flex justify-between">
+                    <span>Tax:</span>
+                    <span>₹{taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {!includeGst && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>GST:</span>
+                    <span>Not included</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
                   <span>₹{total.toFixed(2)}</span>

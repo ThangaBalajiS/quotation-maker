@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Trash2, Download, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Download, Send, BookmarkCheck, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ interface Quotation {
   subtotal: number;
   taxAmount: number;
   total: number;
+  includeGst?: boolean;
   status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
   validUntil: string;
   notes?: string;
@@ -61,6 +63,13 @@ export default function QuotationDetailPage() {
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPresetDialog, setShowPresetDialog] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [presetDescription, setPresetDescription] = useState('');
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [invoiceDueDate, setInvoiceDueDate] = useState('');
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -116,6 +125,57 @@ export default function QuotationDetailPage() {
     });
   };
 
+  const handleSaveAsPreset = async () => {
+    if (!quotation || !presetName.trim()) return;
+
+    setSavingPreset(true);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const presetItems = quotation.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: item.price,
+          taxRate: item.taxRate,
+        }));
+
+        const response = await fetch('/api/presets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: presetName,
+            description: presetDescription,
+            items: presetItems,
+          }),
+        });
+
+        if (response.ok) {
+          resolve('Preset created successfully');
+          setShowPresetDialog(false);
+          setPresetName('');
+          setPresetDescription('');
+        } else {
+          reject('Failed to create preset');
+        }
+      } catch (error) {
+        reject('Error creating preset');
+      } finally {
+        setSavingPreset(false);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating preset...',
+      success: 'Preset created successfully',
+      error: 'Error creating preset',
+    });
+  };
+
   const handleDownloadPDF = async () => {
     try {
       const response = await fetch(`/api/quotations/${params.id}/pdf`);
@@ -135,6 +195,75 @@ export default function QuotationDetailPage() {
     } catch (error) {
       console.error('Error downloading PDF:', error);
     }
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!quotation || !invoiceDueDate) return;
+
+    setCreatingInvoice(true);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const invoiceData = {
+          customerId: quotation.customerId,
+          customerName: quotation.customerName,
+          customerEmail: quotation.customerEmail,
+          customerPhone: quotation.customerPhone,
+          customerAddress: quotation.customerAddress,
+          items: quotation.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: item.price,
+            taxRate: item.taxRate,
+            total: item.total,
+          })),
+          dueDate: invoiceDueDate,
+          notes: quotation.notes,
+          terms: quotation.terms,
+          quotationId: quotation._id,
+          includeGst: quotation.includeGst !== false,
+        };
+
+        const response = await fetch('/api/invoices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invoiceData),
+        });
+
+        if (response.ok) {
+          const invoice = await response.json();
+          resolve('Invoice created successfully');
+          setShowInvoiceDialog(false);
+          setInvoiceDueDate('');
+          router.push(`/dashboard/invoices/${invoice._id}`);
+        } else {
+          reject('Failed to create invoice');
+        }
+      } catch (error) {
+        reject('Error creating invoice');
+      } finally {
+        setCreatingInvoice(false);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating invoice...',
+      success: 'Invoice created successfully',
+      error: 'Error creating invoice',
+    });
+  };
+
+  const openInvoiceDialog = () => {
+    // Set default due date to 30 days from now
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+    setInvoiceDueDate(defaultDueDate.toISOString().split('T')[0]);
+    setShowInvoiceDialog(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -216,6 +345,14 @@ export default function QuotationDetailPage() {
             <Button>
               <Send className="h-4 w-4 mr-2" />
               Send
+            </Button>
+            <Button variant="default" onClick={openInvoiceDialog}>
+              <FileText className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
+            <Button variant="outline" onClick={() => setShowPresetDialog(true)}>
+              <BookmarkCheck className="h-4 w-4 mr-2" />
+              Save as Preset
             </Button>
           </div>
         </div>
@@ -331,10 +468,17 @@ export default function QuotationDetailPage() {
                       <span>Subtotal:</span>
                       <span>₹{quotation.subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Tax Amount:</span>
-                      <span>₹{quotation.taxAmount.toFixed(2)}</span>
-                    </div>
+                    {quotation.includeGst !== false ? (
+                      <div className="flex justify-between">
+                        <span>Tax Amount:</span>
+                        <span>₹{quotation.taxAmount.toFixed(2)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-gray-500 text-sm">
+                        <span>GST:</span>
+                        <span>Not included</span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                       <span>Total:</span>
                       <span>₹{quotation.total.toFixed(2)}</span>
@@ -359,6 +503,90 @@ export default function QuotationDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showPresetDialog} onOpenChange={setShowPresetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save as Preset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create a preset from this quotation&apos;s items for quick reuse.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Preset Name *
+              </label>
+              <Input
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="e.g., Monthly Office Supplies"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                value={presetDescription}
+                onChange={(e) => setPresetDescription(e.target.value)}
+                rows={2}
+                className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Optional description..."
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSaveAsPreset}
+              disabled={!presetName.trim() || savingPreset}
+            >
+              {savingPreset ? 'Saving...' : 'Save Preset'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create Invoice from Quotation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create an invoice based on this quotation. The invoice will include all items and customer details.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Invoice Due Date *
+              </label>
+              <Input
+                type="date"
+                value={invoiceDueDate}
+                onChange={(e) => setInvoiceDueDate(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p><strong>Customer:</strong> {quotation?.customerName}</p>
+              <p><strong>Items:</strong> {quotation?.items.length} item(s)</p>
+              <p><strong>Total:</strong> ₹{quotation?.total.toFixed(2)}</p>
+              {quotation?.includeGst === false && (
+                <p className="text-yellow-600">Note: GST is not included in this quotation</p>
+              )}
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCreateInvoice}
+              disabled={!invoiceDueDate || creatingInvoice}
+            >
+              {creatingInvoice ? 'Creating...' : 'Create Invoice'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

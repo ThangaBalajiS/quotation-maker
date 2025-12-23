@@ -29,6 +29,7 @@ export interface IInvoice extends Document {
   subtotal: number;
   taxAmount: number;
   total: number;
+  includeGst: boolean;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   dueDate: Date;
   paidDate?: Date;
@@ -124,6 +125,10 @@ const InvoiceSchema = new Schema<IInvoice>({
     type: String,
     enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
     default: 'draft',
+  },
+  includeGst: {
+    type: Boolean,
+    default: true,
   },
   dueDate: {
     type: Date,

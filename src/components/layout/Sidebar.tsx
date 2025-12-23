@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   X,
+  BookmarkCheck,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Customers', href: '/dashboard/customers', icon: Users },
   { name: 'Products', href: '/dashboard/products', icon: Package },
+  { name: 'Presets', href: '/dashboard/presets', icon: BookmarkCheck },
   { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
   { name: 'Invoices', href: '/dashboard/invoices', icon: Receipt },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -36,12 +38,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={cn(
         "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out lg:translate-x-0",

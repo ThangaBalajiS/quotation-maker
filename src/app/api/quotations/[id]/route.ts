@@ -52,7 +52,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status, quotationDate } = body;
+    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status, quotationDate, includeGst = true } = body;
 
     if (!customerId || !customerName || !items || !validUntil) {
       return NextResponse.json(
@@ -63,9 +63,11 @@ export async function PUT(
 
     await connectDB();
 
-    // Calculate totals
+    // Calculate totals (respect includeGst flag)
     const subtotal = items.reduce((sum: number, item: IQuotationItem) => sum + (item.price * item.quantity), 0);
-    const taxAmount = items.reduce((sum: number, item: IQuotationItem) => sum + (item.price * item.quantity * item.taxRate / 100), 0);
+    const taxAmount = includeGst
+      ? items.reduce((sum: number, item: IQuotationItem) => sum + (item.price * item.quantity * item.taxRate / 100), 0)
+      : 0;
     const total = subtotal + taxAmount;
 
     const quotation = await Quotation.findOneAndUpdate(
@@ -82,11 +84,14 @@ export async function PUT(
           quantity: item.quantity,
           price: item.price,
           taxRate: item.taxRate,
-          total: item.price * item.quantity,
+          total: includeGst
+            ? item.price * item.quantity + (item.price * item.quantity * item.taxRate / 100)
+            : item.price * item.quantity,
         })),
         subtotal,
         taxAmount,
         total,
+        includeGst,
         validUntil: new Date(validUntil),
         quotationDate: quotationDate ? new Date(quotationDate) : undefined,
         notes,

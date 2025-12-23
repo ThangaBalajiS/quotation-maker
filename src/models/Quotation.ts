@@ -29,6 +29,7 @@ export interface IQuotation extends Document {
   subtotal: number;
   taxAmount: number;
   total: number;
+  includeGst: boolean;
   status: 'sent' | 'accepted' | 'rejected' | 'expired';
   validUntil: Date;
   notes?: string;
@@ -121,6 +122,10 @@ const QuotationSchema = new Schema<IQuotation>({
     type: String,
     enum: ['sent', 'accepted', 'rejected', 'expired'],
     default: 'sent',
+  },
+  includeGst: {
+    type: Boolean,
+    default: true,
   },
   validUntil: {
     type: Date,
