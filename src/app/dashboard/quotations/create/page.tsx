@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -56,7 +56,7 @@ interface PresetItem {
   taxRate: number;
 }
 
-export default function CreateQuotationPage() {
+function CreateQuotationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const presetId = searchParams.get('presetId');
@@ -586,3 +586,16 @@ export default function CreateQuotationPage() {
   );
 }
 
+export default function CreateQuotationPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DashboardLayout>
+    }>
+      <CreateQuotationContent />
+    </Suspense>
+  );
+}

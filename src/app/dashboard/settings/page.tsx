@@ -5,8 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Save, Upload, Building2, Trash2 } from 'lucide-react';
-import Image from 'next/image';
+import { Save, Building2 } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -63,8 +62,8 @@ export default function SettingsPage() {
           });
         }
       }
-    } catch (error) {
-      console.error('Error fetching business details:', error);
+    } catch (err) {
+      console.error('Error fetching business details:', err);
     } finally {
       setLoading(false);
     }
@@ -112,7 +111,8 @@ export default function SettingsPage() {
         } else {
           reject('Error updating business details');
         }
-      } catch (error) {
+      } catch (err) {
+        console.error('Error saving business details:', err);
         reject('Error saving business details');
       } finally {
         setSaving(false);
@@ -123,68 +123,6 @@ export default function SettingsPage() {
       loading: 'Saving settings...',
       success: 'Business details updated successfully!',
       error: 'Error updating business details',
-    });
-  };
-
-  const promise = new Promise(async (resolve, reject) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          [type]: data.imageUrl,
-        }));
-        resolve(`${type === 'logo' ? 'Logo' : 'Signature'} uploaded successfully!`);
-      } else {
-        const errorData = await response.json();
-        reject(errorData.error || 'Upload failed');
-      }
-    } catch (error) {
-      reject('Error uploading file');
-    }
-  });
-
-  toast.promise(promise, {
-    loading: 'Uploading...',
-    success: (data) => `${data}`,
-    error: (err) => `Error: ${err}`,
-  });
-
-  const handleDeleteImage = async (type: 'logo' | 'signature') => {
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        const response = await fetch(`/api/upload/image?type=${type}`, {
-          method: 'DELETE',
-        });
-
-        if (response.ok) {
-          setFormData(prev => ({
-            ...prev,
-            [type]: '',
-          }));
-          resolve(`${type === 'logo' ? 'Logo' : 'Signature'} deleted successfully!`);
-        } else {
-          const errorData = await response.json();
-          reject(errorData.error || 'Delete failed');
-        }
-      } catch (error) {
-        reject('Error deleting image');
-      }
-    });
-
-    toast.promise(promise, {
-      loading: 'Deleting...',
-      success: (data) => `${data}`,
-      error: (err) => `Error: ${err}`,
     });
   };
 
