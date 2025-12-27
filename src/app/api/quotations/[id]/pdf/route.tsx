@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Quotation from '@/models/Quotation';
 import User from '@/models/User';
+import BrandImage from '@/models/BrandImage';
 import { pdf } from '@react-pdf/renderer';
 import QuotationPDF from '@/components/pdf/QuotationPDF';
 
@@ -55,6 +56,12 @@ export async function GET(
       return undefined;
     };
 
+    // Fetch brand images for PDF
+    const brandImages = await BrandImage.find({ tenantId: session.user.tenantId })
+      .sort({ order: 1 })
+      .select('imageUrl')
+      .lean() as unknown as { imageUrl: string }[];
+
     // Prepare data for PDF
     const pdfData = {
       quotationNumber: quotation.quotationNumber,
@@ -68,6 +75,7 @@ export async function GET(
       total: quotation.total,
       notes: quotation.notes,
       terms: quotation.terms,
+      brandImages: brandImages.map((img) => img.imageUrl),
       businessDetails: {
         businessName: user.businessDetails?.businessName || 'Your Business Name',
         contactPerson: user.name,

@@ -7,13 +7,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, Building2, Upload, Trash2 } from 'lucide-react';
+import { Save, Building2, Upload, Trash2, ImageIcon } from 'lucide-react';
 
 import { toast } from 'sonner';
+
+interface BrandImage {
+  _id: string;
+  imageUrl: string;
+  order: number;
+}
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [brandImages, setBrandImages] = useState<BrandImage[]>([]);
+  const [uploadingBrandImage, setUploadingBrandImage] = useState(false);
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -32,7 +40,20 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchBusinessDetails();
+    fetchBrandImages();
   }, []);
+
+  const fetchBrandImages = async () => {
+    try {
+      const response = await fetch('/api/brand-images');
+      if (response.ok) {
+        const data = await response.json();
+        setBrandImages(data.brandImages || []);
+      }
+    } catch (err) {
+      console.error('Error fetching brand images:', err);
+    }
+  };
 
   const fetchBusinessDetails = async () => {
     try {
@@ -169,6 +190,66 @@ export default function SettingsPage() {
       loading: `Removing ${type}...`,
       success: `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`,
       error: `Error removing ${type}`,
+    });
+  };
+
+  const handleBrandImageUpload = async (file: File) => {
+    setUploadingBrandImage(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch('/api/brand-images', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setBrandImages((prev) => [...prev, data.brandImage]);
+          resolve('Brand image uploaded successfully!');
+        } else {
+          reject(data.error || 'Error uploading brand image');
+        }
+      } catch (err) {
+        console.error('Error uploading brand image:', err);
+        reject('Error uploading brand image');
+      } finally {
+        setUploadingBrandImage(false);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Uploading brand image...',
+      success: 'Brand image uploaded successfully!',
+      error: (err) => err,
+    });
+  };
+
+  const handleDeleteBrandImage = async (id: string) => {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/brand-images?id=${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setBrandImages((prev) => prev.filter((img) => img._id !== id));
+          resolve('Brand image removed successfully!');
+        } else {
+          reject('Error removing brand image');
+        }
+      } catch (err) {
+        console.error('Error deleting brand image:', err);
+        reject('Error deleting brand image');
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Removing brand image...',
+      success: 'Brand image removed successfully!',
+      error: 'Error removing brand image',
     });
   };
 
@@ -382,6 +463,70 @@ export default function SettingsPage() {
                   Your digital signature will appear at the bottom of all quotations and invoices.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Brand Images */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <ImageIcon className="h-5 w-5 mr-2" />
+                Brand Images
+              </CardTitle>
+              <CardDescription>
+                Upload images to display at the end of quotation PDFs. Images must be 500×500 pixels or smaller.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {brandImages.map((img) => (
+                  <div key={img._id} className="relative group">
+                    <Image
+                      src={img.imageUrl}
+                      alt="Brand Image"
+                      width={150}
+                      height={150}
+                      className="object-contain border rounded w-full h-auto"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDeleteBrandImage(img._id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                {/* Upload new brand image */}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleBrandImageUpload(file);
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                    id="brand-image-upload"
+                    disabled={uploadingBrandImage}
+                  />
+                  <label
+                    htmlFor="brand-image-upload"
+                    className="flex flex-col items-center justify-center w-full h-[150px] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">
+                      {uploadingBrandImage ? 'Uploading...' : 'Add Image'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                These images will appear at the end of your quotation PDFs.
+              </p>
             </CardContent>
           </Card>
 

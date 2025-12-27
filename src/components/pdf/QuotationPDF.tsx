@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text */
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
@@ -24,6 +25,7 @@ interface QuotationData {
   total: number;
   notes?: string;
   terms?: string;
+  brandImages?: string[];
   businessDetails: {
     businessName: string;
     contactPerson?: string;
@@ -253,6 +255,28 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#6b7280',
   },
+  brandImagesSection: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  brandImagesTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#374151',
+  },
+  brandImagesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  brandImage: {
+    width: 100,
+    height: 100,
+    objectFit: 'contain',
+  },
 });
 
 const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
@@ -388,6 +412,22 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
             <Text style={styles.signatureLabel}>AUTHORIZED SIGNATURE</Text>
           </View>
         </View>
+
+        {/* Brand Images Section */}
+        {data.brandImages && data.brandImages.length > 0 && (
+          <View style={styles.brandImagesSection}>
+            <Text style={styles.brandImagesTitle}>Our Work</Text>
+            <View style={styles.brandImagesGrid}>
+              {data.brandImages.map((imageUrl, index) => (
+                <Image
+                  key={index}
+                  style={styles.brandImage}
+                  src={imageUrl}
+                />
+              ))}
+            </View>
+          </View>
+        )}
       </Page>
     </Document>
   );
