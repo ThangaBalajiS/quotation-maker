@@ -43,14 +43,24 @@ export async function GET(
       );
     }
 
+    // Helper function to safely format address (handles both string and legacy object formats)
+    const formatAddress = (address: unknown): string | undefined => {
+      if (!address) return undefined;
+      if (typeof address === 'string') return address;
+      if (typeof address === 'object' && address !== null) {
+        const addr = address as { street?: string; city?: string; state?: string; pincode?: string; country?: string };
+        const parts = [addr.street, addr.city, addr.state, addr.pincode, addr.country].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : undefined;
+      }
+      return undefined;
+    };
+
     // Prepare data for PDF
     const pdfData = {
       quotationNumber: quotation.quotationNumber,
       date: quotation.createdAt,
       customerName: quotation.customerName,
-      customerAddress: quotation.customerAddress ? 
-        `${quotation.customerAddress.street}, ${quotation.customerAddress.city}, ${quotation.customerAddress.state} ${quotation.customerAddress.pincode}` : 
-        undefined,
+      customerAddress: formatAddress(quotation.customerAddress),
       workDescription: 'Professional Services', // You can customize this
       items: quotation.items,
       subtotal: quotation.subtotal,
@@ -61,13 +71,7 @@ export async function GET(
       businessDetails: {
         businessName: user.businessDetails?.businessName || 'Your Business Name',
         contactPerson: user.name,
-        address: user.businessDetails?.address || {
-          street: '',
-          city: '',
-          state: '',
-          pincode: '',
-          country: 'India',
-        },
+        address: formatAddress(user.businessDetails?.address) || '',
         phone: user.businessDetails?.phone,
         email: user.businessDetails?.email || user.email,
         gstNumber: user.businessDetails?.gstNumber,
@@ -78,8 +82,7 @@ export async function GET(
     };
 
     // Generate PDF
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfDoc = pdf(QuotationPDF({ data: pdfData }) as any);
+    const pdfDoc = pdf(<QuotationPDF data={pdfData} />);
     const pdfStream = await pdfDoc.toBlob();
 
     // Return PDF as response

@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,17 +31,8 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Process image with sharp - resize to 300x300 and convert to base64
-    const processedImage = await sharp(buffer)
-      .resize(300, 300, {
-        fit: 'contain',
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      })
-      .png()
-      .toBuffer();
-
-    // Convert to base64 data URL
-    const base64Image = `data:image/png;base64,${processedImage.toString('base64')}`;
+    // Convert to base64 data URL (using original file MIME type)
+    const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
     // Connect to database and update user
     await connectDB();

@@ -27,13 +27,7 @@ interface QuotationData {
   businessDetails: {
     businessName: string;
     contactPerson?: string;
-    address: {
-      street: string;
-      city: string;
-      state: string;
-      pincode: string;
-      country: string;
-    };
+    address?: string;
     phone?: string;
     email?: string;
     gstNumber?: string;
@@ -281,9 +275,9 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
             {data.businessDetails.contactPerson && (
               <Text style={styles.contactPerson}>{data.businessDetails.contactPerson}</Text>
             )}
-            <Text style={styles.address}>
-              {data.businessDetails.address.street}, {data.businessDetails.address.city}, {data.businessDetails.address.state} {data.businessDetails.address.pincode}
-            </Text>
+            {data.businessDetails.address && (
+              <Text style={styles.address}>{data.businessDetails.address}</Text>
+            )}
             {data.businessDetails.phone && (
               <Text style={styles.contactInfo}>PH: {data.businessDetails.phone}</Text>
             )}
@@ -294,7 +288,13 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
               <Text style={styles.gstInfo}>GSTIN: {data.businessDetails.gstNumber}</Text>
             )}
           </View>
-          <View style={styles.quotationDetails}>
+          <View style={styles.logoSection}>
+            {data.businessDetails.logo && (
+              <Image 
+                style={styles.logo} 
+                src={data.businessDetails.logo} 
+              />
+            )}
             <Text style={styles.quotationTitle}>Quotation</Text>
             <Text style={styles.quotationNumber}>Quotation#: {data.quotationNumber}</Text>
             <Text style={styles.quotationDate}>Date: {formatDate(data.date)}</Text>

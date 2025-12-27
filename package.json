@@ -7,8 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "setup": "node setup-env.js",
-    "postinstall": "npm rebuild sharp"
+    "setup": "node setup-env.js"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",
@@ -42,7 +41,6 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.65.0",
     "recharts": "^3.3.0",
-    "sharp": "^0.34.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.12"

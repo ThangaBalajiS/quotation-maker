@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Save, Building2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Save, Building2, Upload, Trash2 } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -18,11 +20,7 @@ export default function SettingsPage() {
     gstNumber: '',
     phone: '',
     email: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
-    country: 'India',
+    address: '',
     logo: '',
     signature: '',
     accountName: '',
@@ -47,11 +45,7 @@ export default function SettingsPage() {
             gstNumber: data.businessDetails.gstNumber || '',
             phone: data.businessDetails.phone || '',
             email: data.businessDetails.email || '',
-            street: data.businessDetails.address?.street || '',
-            city: data.businessDetails.address?.city || '',
-            state: data.businessDetails.address?.state || '',
-            pincode: data.businessDetails.address?.pincode || '',
-            country: data.businessDetails.address?.country || 'India',
+            address: data.businessDetails.address || '',
             logo: data.businessDetails.logo || '',
             signature: data.businessDetails.signature || '',
             accountName: data.businessDetails.bankDetails?.accountName || '',
@@ -80,13 +74,7 @@ export default function SettingsPage() {
           gstNumber: formData.gstNumber || undefined,
           phone: formData.phone || undefined,
           email: formData.email || undefined,
-          address: {
-            street: formData.street,
-            city: formData.city,
-            state: formData.state,
-            pincode: formData.pincode,
-            country: formData.country,
-          },
+          address: formData.address || undefined,
           logo: formData.logo || undefined,
           signature: formData.signature || undefined,
           bankDetails: {
@@ -123,6 +111,64 @@ export default function SettingsPage() {
       loading: 'Saving settings...',
       success: 'Business details updated successfully!',
       error: 'Error updating business details',
+    });
+  };
+
+  const handleFileUpload = async (file: File, type: 'logo' | 'signature') => {
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    formDataUpload.append('type', type);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setFormData((prev) => ({ ...prev, [type]: data.imageUrl }));
+          resolve(`${type} uploaded successfully!`);
+        } else {
+          reject(`Error uploading ${type}`);
+        }
+      } catch (err) {
+        console.error(`Error uploading ${type}:`, err);
+        reject(`Error uploading ${type}`);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: `Uploading ${type}...`,
+      success: `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`,
+      error: `Error uploading ${type}`,
+    });
+  };
+
+  const handleDeleteImage = async (type: 'logo' | 'signature') => {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/upload/image?type=${type}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setFormData((prev) => ({ ...prev, [type]: '' }));
+          resolve(`${type} removed successfully!`);
+        } else {
+          reject(`Error removing ${type}`);
+        }
+      } catch (err) {
+        console.error(`Error deleting ${type}:`, err);
+        reject(`Error deleting ${type}`);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: `Removing ${type}...`,
+      success: `${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`,
+      error: `Error removing ${type}`,
     });
   };
 
@@ -213,60 +259,27 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Street Address
+                  Business Address
                 </label>
-                <Input
-                  value={formData.street}
-                  onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                <Textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter your complete business address"
+                  rows={4}
                 />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <Input
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State
-                  </label>
-                  <Input
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pincode
-                  </label>
-                  <Input
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <Input
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Enter your complete address as you want it to appear on documents
+                </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Branding */}
-          {/*   <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Branding</CardTitle>
               <CardDescription>
-                Upload your business logo and signature for documents. Images will be automatically resized to 300x300 pixels and stored securely.
+                Upload your business logo and signature for documents.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -370,7 +383,7 @@ export default function SettingsPage() {
                 </p>
               </div>
             </CardContent>
-          </Card>*/}
+          </Card>
 
           {/* Bank Details */}
           <Card>
