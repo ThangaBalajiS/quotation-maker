@@ -30,6 +30,7 @@ export interface IQuotation extends Document {
   taxAmount: number;
   total: number;
   includeGst: boolean;
+  hideItemPrices: boolean;
   status: 'sent' | 'accepted' | 'rejected' | 'expired';
   validUntil: Date;
   notes?: string;
@@ -126,6 +127,10 @@ const QuotationSchema = new Schema<IQuotation>({
   includeGst: {
     type: Boolean,
     default: true,
+  },
+  hideItemPrices: {
+    type: Boolean,
+    default: false,
   },
   validUntil: {
     type: Date,

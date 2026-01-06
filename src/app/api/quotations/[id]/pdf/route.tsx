@@ -68,13 +68,14 @@ export async function GET(
       date: quotation.createdAt,
       customerName: quotation.customerName,
       customerAddress: formatAddress(quotation.customerAddress),
-      workDescription: 'Professional Services', // You can customize this
+      // workDescription: 'Professional Services', // You can customize this
       items: quotation.items,
       subtotal: quotation.subtotal,
       taxAmount: quotation.taxAmount,
       total: quotation.total,
       notes: quotation.notes,
       terms: quotation.terms,
+      hideItemPrices: quotation.hideItemPrices || false,
       brandImages: brandImages.map((img) => img.imageUrl),
       businessDetails: {
         businessName: user.businessDetails?.businessName || 'Your Business Name',

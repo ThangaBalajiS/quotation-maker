@@ -25,6 +25,7 @@ interface QuotationData {
   total: number;
   notes?: string;
   terms?: string;
+  hideItemPrices?: boolean;
   brandImages?: string[];
   businessDetails: {
     businessName: string;
@@ -341,23 +342,31 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
-            <Text style={[styles.tableHeaderCell, styles.col2]}>DESCRIPTION</Text>
-            <Text style={[styles.tableHeaderCell, styles.col3]}>QTY</Text>
-            <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
-            <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
+            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '75%' } : styles.col2]}>DESCRIPTION</Text>
+            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>QTY</Text>
+            {!data.hideItemPrices && (
+              <>
+                <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
+                <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
+              </>
+            )}
           </View>
           {data.items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
-              <View style={styles.col2}>
+              <View style={data.hideItemPrices ? { width: '75%' } : styles.col2}>
                 <Text style={styles.tableCell}>{item.productName}</Text>
                 {item.description && (
                   <Text style={styles.itemDescription}>{item.description}</Text>
                 )}
               </View>
-              <Text style={[styles.tableCell, styles.col3]}>{item.quantity} {item.unit}</Text>
-              <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
-              <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
+              <Text style={[styles.tableCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>{item.quantity} {item.unit}</Text>
+              {!data.hideItemPrices && (
+                <>
+                  <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
+                  <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
+                </>
+              )}
             </View>
           ))}
         </View>

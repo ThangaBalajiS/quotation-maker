@@ -52,7 +52,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status, quotationDate, includeGst = true } = body;
+    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, status, quotationDate, includeGst = true, hideItemPrices = false } = body;
 
     if (!customerId || !customerName || !items || !validUntil) {
       return NextResponse.json(
@@ -92,6 +92,7 @@ export async function PUT(
         taxAmount,
         total,
         includeGst,
+        hideItemPrices,
         validUntil: new Date(validUntil),
         quotationDate: quotationDate ? new Date(quotationDate) : undefined,
         notes,

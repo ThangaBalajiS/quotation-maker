@@ -83,6 +83,7 @@ export default function EditQuotationPage() {
   });
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [includeGst, setIncludeGst] = useState(true);
+  const [hideItemPrices, setHideItemPrices] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -210,6 +211,7 @@ export default function EditQuotationPage() {
         });
         setItems(itemsWithProducts);
         setIncludeGst(data.includeGst !== false); // Default to true if not set
+        setHideItemPrices(data.hideItemPrices === true); // Default to false if not set
       }
     } catch (error) {
       console.error('Error fetching quotation:', error);
@@ -354,6 +356,7 @@ export default function EditQuotationPage() {
         taxAmount,
         total,
         includeGst,
+        hideItemPrices,
         notes: formData.notes,
         terms: formData.terms,
       };
@@ -466,6 +469,18 @@ export default function EditQuotationPage() {
                 />
                 <label htmlFor="includeGst" className="text-sm font-medium text-gray-700">
                   Include GST/Tax in this quotation
+                </label>
+              </div>
+              <div className="flex items-center space-x-3 mt-3">
+                <input
+                  type="checkbox"
+                  id="hideItemPrices"
+                  checked={hideItemPrices}
+                  onChange={(e) => setHideItemPrices(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="hideItemPrices" className="text-sm font-medium text-gray-700">
+                  Hide item prices in PDF (only show total)
                 </label>
               </div>
             </CardContent>

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, includeGst = true } = body;
+    const { customerId, customerName, customerEmail, customerPhone, customerAddress, items, notes, terms, validUntil, includeGst = true, hideItemPrices = false } = body;
 
     if (!customerId || !customerName || !items || !validUntil) {
       return NextResponse.json(
@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       taxAmount,
       total,
       includeGst,
+      hideItemPrices,
       validUntil: new Date(validUntil),
       notes,
       terms,
