@@ -7,12 +7,15 @@ export interface IUser extends Document {
   tenantId: string;
   businessDetails?: {
     businessName: string;
+    tagline?: string;
     gstNumber?: string;
     address?: string;
     logo?: string;
     signature?: string;
     phone?: string;
+    landline?: string;
     email?: string;
+    website?: string;
     bankDetails?: {
       accountName?: string;
       accountNumber?: string;
@@ -50,6 +53,10 @@ const UserSchema = new Schema<IUser>({
       type: String,
       default: '',
     },
+    tagline: {
+      type: String,
+      default: '',
+    },
     gstNumber: {
       type: String,
       default: '',
@@ -70,7 +77,15 @@ const UserSchema = new Schema<IUser>({
       type: String,
       default: '',
     },
+    landline: {
+      type: String,
+      default: '',
+    },
     email: {
+      type: String,
+      default: '',
+    },
+    website: {
       type: String,
       default: '',
     },

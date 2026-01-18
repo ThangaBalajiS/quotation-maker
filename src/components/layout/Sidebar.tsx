@@ -13,6 +13,7 @@ import {
   LogOut,
   X,
   BookmarkCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Presets', href: '/dashboard/presets', icon: BookmarkCheck },
   { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
+  { name: 'Proposals', href: '/dashboard/proposals', icon: ClipboardList },
   { name: 'Invoices', href: '/dashboard/invoices', icon: Receipt },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
