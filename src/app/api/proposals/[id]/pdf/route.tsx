@@ -5,7 +5,39 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Proposal from '@/models/Proposal';
 import User from '@/models/User';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
+
+// Vercel function configuration for Puppeteer
+export const maxDuration = 60; // Maximum 60 seconds execution time
+export const dynamic = 'force-dynamic';
+
+// Helper to get browser - handles both local dev and Vercel production
+async function getBrowser() {
+  if (process.env.NODE_ENV === 'development') {
+    // For local development, use local Chrome
+    // Try common locations for Chrome/Chromium
+    const executablePath = process.platform === 'darwin'
+      ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+      : process.platform === 'win32'
+      ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+      : '/usr/bin/google-chrome';
+    
+    return puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath,
+      headless: true,
+    });
+  }
+
+  // For Vercel production, use @sparticuz/chromium
+  return puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: { width: 1200, height: 800 },
+    executablePath: await chromium.executablePath(),
+    headless: true,
+  });
+}
 
 // Helper functions
 const formatCurrency = (amount: number) => amount.toLocaleString('en-IN');
@@ -671,14 +703,11 @@ export async function GET(
       terms: proposal.terms || [],
     }, businessDetails);
 
-    // Launch Puppeteer and generate PDF
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    // Launch browser (handles both local dev and Vercel production)
+    const browser = await getBrowser();
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
 
     const pdfBuffer = await page.pdf({
       format: 'A4',

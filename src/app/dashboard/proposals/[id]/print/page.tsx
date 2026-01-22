@@ -448,8 +448,16 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
     .back-btn:hover { background: #555; }
 
     @media print {
-      body { background: white; }
-      .page { margin: 0; box-shadow: none; width: 100%; height: auto; page-break-after: always; }
+      body { background: white; margin: 0; padding: 0; }
+      .page { 
+        margin: 0; 
+        box-shadow: none; 
+        width: 100%; 
+        min-height: 100vh;
+        height: 100vh;
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
       .fab { display: none; }
       .back-btn { display: none; }
     }
