@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 interface Material {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -99,7 +99,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ id: str
   };
 
   const handleAddMaterial = () => {
-    setMaterials([...materials, { description: '', specification: '', warranty: '' }]);
+    setMaterials([...materials, { description: '', quantity: '', warranty: '' }]);
   };
 
   const handleRemoveMaterial = (index: number) => {
@@ -387,11 +387,11 @@ export default function EditProposalPage({ params }: { params: Promise<{ id: str
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Specification</label>
+                  <label className="block text-xs text-gray-500 mb-1">Quantity</label>
                   <Input
-                    value={material.specification}
-                    onChange={(e) => handleMaterialChange(index, 'specification', e.target.value)}
-                    placeholder="e.g. 600Wp - Axitec"
+                    value={material.quantity}
+                    onChange={(e) => handleMaterialChange(index, 'quantity', e.target.value)}
+                    placeholder="e.g. 17 pcs"
                   />
                 </div>
                 <div>

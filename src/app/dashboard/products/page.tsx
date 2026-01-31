@@ -19,6 +19,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 interface Product {
   _id: string;
   name: string;
@@ -240,121 +248,119 @@ export default function ProductsPage() {
           />
         </div>
 
-        {/* Add/Edit Form */}
-        {showAddForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
+        {/* Add/Edit Form Dialog */}
+        <Dialog open={showAddForm} onOpenChange={() => {}}>
+          <DialogContent preventOutsideClose hideCloseButton className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </CardTitle>
-              <CardDescription>
+              </DialogTitle>
+              <DialogDescription>
                 {editingProduct ? 'Update product information' : 'Enter product details'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name *
-                    </label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Unit
-                    </label>
-                    <select
-                      value={formData.unit}
-                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="pcs">Pieces</option>
-                      <option value="kg">Kilogram</option>
-                      <option value="g">Gram</option>
-                      <option value="l">Liter</option>
-                      <option value="ml">Milliliter</option>
-                      <option value="m">Meter</option>
-                      <option value="cm">Centimeter</option>
-                      <option value="ft">Feet</option>
-                      <option value="hr">Hour</option>
-                      <option value="day">Day</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tax Rate (%)
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.taxRate}
-                      onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      HSN Code
-                    </label>
-                    <Input
-                      value={formData.hsnCode}
-                      onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                      Active
-                    </label>
-                  </div>
-                </div>
-
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
+                    Name *
                   </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
                   />
                 </div>
-
-                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-                  <Button type="button" variant="outline" onClick={resetForm} className="w-full sm:w-auto">
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="w-full sm:w-auto">
-                    {editingProduct ? 'Update Product' : 'Add Product'}
-                  </Button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price *
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    required
+                  />
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit
+                  </label>
+                  <select
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="pcs">Pieces</option>
+                    <option value="kg">Kilogram</option>
+                    <option value="g">Gram</option>
+                    <option value="l">Liter</option>
+                    <option value="ml">Milliliter</option>
+                    <option value="m">Meter</option>
+                    <option value="cm">Centimeter</option>
+                    <option value="ft">Feet</option>
+                    <option value="hr">Hour</option>
+                    <option value="day">Day</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tax Rate (%)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.taxRate}
+                    onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    HSN Code
+                  </label>
+                  <Input
+                    value={formData.hsnCode}
+                    onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                    Active
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+                <Button type="button" variant="outline" onClick={resetForm} className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+                <Button type="submit" className="w-full sm:w-auto">
+                  {editingProduct ? 'Update Product' : 'Add Product'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Products List */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">

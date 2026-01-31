@@ -33,7 +33,7 @@ interface Quotation {
 
 interface Material {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -119,7 +119,7 @@ export default function CreateProposalPage() {
     if (quotation.items && quotation.items.length > 0) {
       const materialsFromQuotation: Material[] = quotation.items.map(item => ({
         description: item.productName,
-        specification: item.description || `${item.quantity} ${item.unit}`,
+        quantity: `${item.quantity} ${item.unit}`,
         warranty: '', // User can fill this in
       }));
       setMaterials(materialsFromQuotation);
@@ -138,7 +138,7 @@ export default function CreateProposalPage() {
   };
 
   const handleAddMaterial = () => {
-    setMaterials([...materials, { description: '', specification: '', warranty: '' }]);
+    setMaterials([...materials, { description: '', quantity: '', warranty: '' }]);
   };
 
   const handleRemoveMaterial = (index: number) => {
@@ -413,9 +413,9 @@ export default function CreateProposalPage() {
                     </div>
                     <div className="col-span-4">
                       <Input
-                        placeholder="Specification"
-                        value={material.specification}
-                        onChange={(e) => handleMaterialChange(index, 'specification', e.target.value)}
+                        placeholder="Quantity"
+                        value={material.quantity}
+                        onChange={(e) => handleMaterialChange(index, 'quantity', e.target.value)}
                       />
                     </div>
                     <div className="col-span-3">

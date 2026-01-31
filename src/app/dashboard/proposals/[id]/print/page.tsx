@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface Material {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -236,7 +236,7 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
 
     .tagline {
       font-size: 16px;
-      color: var(--accent);
+      color: var(--text-main);
       font-weight: 600;
       font-style: italic;
       margin-bottom: 50px;
@@ -404,7 +404,7 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
 
     .quote-box {
       background-color: #e8f5e9;
-      color: #2e7d32;
+      color: var(--text-main);
       padding: 20px;
       border-radius: 8px;
       text-align: center;
@@ -607,7 +607,7 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
           <thead>
             <tr>
               <th>Component</th>
-              <th>Specification</th>
+              <th>Quantity</th>
               <th>Warranty Coverage</th>
             </tr>
           </thead>
@@ -615,8 +615,8 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
             {proposal.materials.map((material, index) => (
               <tr key={index}>
                 <td><strong>{material.description}</strong></td>
-                <td>{material.specification}</td>
-                <td style={{ color: '#00c853', fontWeight: 'bold' }}>{material.warranty}</td>
+                <td>{material.quantity}</td>
+                <td style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>{material.warranty}</td>
               </tr>
             ))}
           </tbody>
@@ -659,7 +659,7 @@ export default function PrintProposalPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="impact-card">
             <span className="label">Environmental Impact</span>
-            <span className="value" style={{ color: '#2e7d32' }}>{proposal.roi.treesEquivalent} Trees</span>
+            <span className="value" style={{ color: 'var(--text-main)' }}>{proposal.roi.treesEquivalent} Trees</span>
             <span className="label">Planted Equivalent</span>
           </div>
           <div className="impact-card">

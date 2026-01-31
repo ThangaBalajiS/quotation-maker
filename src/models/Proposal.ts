@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 // Material item interface for Bill of Materials
 export interface IProposalMaterial {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -73,13 +73,12 @@ const ProposalMaterialSchema = new Schema<IProposalMaterial>({
     type: String,
     required: true,
   },
-  specification: {
+  quantity: {
     type: String,
     required: true,
   },
   warranty: {
     type: String,
-    required: true,
   },
 }, { _id: false });
 

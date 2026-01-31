@@ -61,7 +61,7 @@ function generateProposalHTML(proposal: {
   totalAmount: number;
   advancePercent: number;
   balancePercent: number;
-  materials: Array<{ description: string; specification: string; warranty: string }>;
+  materials: Array<{ description: string; quantity: string; warranty: string }>;
   roi: {
     energyGenerationPerYear: number;
     co2SavingsPerYear: number;
@@ -89,7 +89,7 @@ function generateProposalHTML(proposal: {
   const materialsRows = proposal.materials.map(m => `
     <tr>
       <td><strong>${m.description}</strong></td>
-      <td>${m.specification}</td>
+      <td>${m.quantity}</td>
       <td style="color: #00c853; font-weight: bold;">${m.warranty}</td>
     </tr>
   `).join('');
@@ -520,7 +520,7 @@ function generateProposalHTML(proposal: {
       <thead>
         <tr>
           <th>Component</th>
-          <th>Specification</th>
+          <th>Quantity</th>
           <th>Warranty Coverage</th>
         </tr>
       </thead>

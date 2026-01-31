@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 interface Material {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -247,7 +247,7 @@ export default function ViewProposalPage({ params }: { params: Promise<{ id: str
                 <thead>
                   <tr className="border-b bg-gray-50">
                     <th className="text-left p-2">Description</th>
-                    <th className="text-left p-2">Specification</th>
+                    <th className="text-left p-2">Quantity</th>
                     <th className="text-left p-2">Warranty</th>
                   </tr>
                 </thead>
@@ -255,7 +255,7 @@ export default function ViewProposalPage({ params }: { params: Promise<{ id: str
                   {proposal.materials.map((material, index) => (
                     <tr key={index} className="border-b">
                       <td className="p-2">{material.description}</td>
-                      <td className="p-2">{material.specification}</td>
+                      <td className="p-2">{material.quantity}</td>
                       <td className="p-2">{material.warranty}</td>
                     </tr>
                   ))}

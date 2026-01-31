@@ -3,9 +3,9 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 // Interfaces
-interface ProposalMaterial {
+interface Material {
   description: string;
-  specification: string;
+  quantity: string;
   warranty: string;
 }
 
@@ -35,7 +35,7 @@ interface ProposalData {
   advancePercent: number;
   balancePercent: number;
   paymentTermsNotes?: string;
-  materials: ProposalMaterial[];
+  materials: Material[];
   roi: ProposalROI;
   technicalSummary?: string;
   financialSummary?: string;
@@ -644,7 +644,7 @@ const BillOfMaterialsPage: React.FC<{ data: ProposalData }> = ({ data }) => (
         {/* Header */}
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderCell, styles.bomCol1]}>DESCRIPTION</Text>
-          <Text style={[styles.tableHeaderCell, styles.bomCol2]}>SPECIFICATION</Text>
+          <Text style={[styles.tableHeaderCell, styles.bomCol2]}>QUANTITY</Text>
           <Text style={[styles.tableHeaderCell, styles.bomCol3]}>WARRANTY{'\n'}(from the date of invoice)</Text>
         </View>
         
@@ -652,7 +652,7 @@ const BillOfMaterialsPage: React.FC<{ data: ProposalData }> = ({ data }) => (
         {data.materials.map((material, index) => (
           <View key={index} style={styles.tableRow}>
             <Text style={[styles.tableCell, styles.bomCol1]}>{material.description}</Text>
-            <Text style={[styles.tableCell, styles.bomCol2]}>{material.specification}</Text>
+            <Text style={[styles.tableCell, styles.bomCol2]}>{material.quantity}</Text>
             <Text style={[styles.tableCell, styles.bomCol3]}>{material.warranty}</Text>
           </View>
         ))}
