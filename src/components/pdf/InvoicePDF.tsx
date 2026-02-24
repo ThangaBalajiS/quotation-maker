@@ -2,7 +2,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
-interface QuotationItem {
+interface InvoiceItem {
   productId: string;
   productName: string;
   description?: string;
@@ -13,20 +13,19 @@ interface QuotationItem {
   total: number;
 }
 
-interface QuotationData {
-  quotationNumber: string;
+interface InvoiceData {
+  invoiceNumber: string;
   date: string;
+  dueDate: string;
   customerName: string;
   customerAddress?: string;
   customerGstNumber?: string;
-  workDescription?: string;
-  items: QuotationItem[];
+  items: InvoiceItem[];
   subtotal: number;
   taxAmount: number;
   total: number;
   notes?: string;
   terms?: string;
-  hideItemPrices?: boolean;
   brandImages?: string[];
   businessDetails: {
     businessName: string;
@@ -90,12 +89,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     color: '#666',
   },
-  slogan: {
-    fontSize: 10,
-    fontStyle: 'italic',
-    color: '#666',
-    marginBottom: 5,
-  },
   contactInfo: {
     fontSize: 9,
     marginBottom: 2,
@@ -106,21 +99,17 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontWeight: 'bold',
   },
-  quotationTitle: {
+  invoiceTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1e40af',
     textAlign: 'right',
   },
-  quotationDetails: {
-    alignItems: 'flex-end',
-    width: '40%',
-  },
-  quotationNumber: {
+  invoiceNumber: {
     fontSize: 12,
     marginBottom: 5,
   },
-  quotationDate: {
+  invoiceDate: {
     fontSize: 12,
   },
   customerSection: {
@@ -140,11 +129,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     marginBottom: 5,
-  },
-  workDescription: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#1e40af',
   },
   table: {
     marginBottom: 20,
@@ -282,9 +266,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
+const InvoicePDF: React.FC<{ data: InvoiceData }> = ({ data }) => {
   const formatCurrency = (amount: number) => {
-    // Use a simple format that works reliably in PDFs
     return `Rs. ${amount.toFixed(2)}`;
   };
   const formatDate = (dateString: string) => {
@@ -322,18 +305,16 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
                 src={data.businessDetails.logo} 
               />
             )}
-            <Text style={styles.quotationTitle}>Quotation</Text>
-            <Text style={styles.quotationNumber}>Quotation#: {data.quotationNumber}</Text>
-            <Text style={styles.quotationDate}>Date: {formatDate(data.date)}</Text>
+            <Text style={styles.invoiceTitle}>Invoice</Text>
+            <Text style={styles.invoiceNumber}>Invoice#: {data.invoiceNumber}</Text>
+            <Text style={styles.invoiceDate}>Date: {formatDate(data.date)}</Text>
+            <Text style={styles.invoiceDate}>Due: {formatDate(data.dueDate)}</Text>
           </View>
         </View>
 
         {/* Customer Section */}
         <View style={styles.customerSection}>
-          <Text style={styles.sectionTitle}>To,</Text>
-          {data.workDescription && (
-            <Text style={styles.workDescription}>{data.workDescription}</Text>
-          )}
+          <Text style={styles.sectionTitle}>Bill To,</Text>
           <Text style={styles.customerName}>{data.customerName}</Text>
           {data.customerAddress && (
             <Text style={styles.customerAddress}>{data.customerAddress}</Text>
@@ -347,31 +328,23 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
-            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '75%' } : styles.col2]}>DESCRIPTION</Text>
-            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>QTY</Text>
-            {!data.hideItemPrices && (
-              <>
-                <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
-                <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
-              </>
-            )}
+            <Text style={[styles.tableHeaderCell, styles.col2]}>DESCRIPTION</Text>
+            <Text style={[styles.tableHeaderCell, styles.col3]}>QTY</Text>
+            <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
+            <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
           </View>
           {data.items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
-              <View style={data.hideItemPrices ? { width: '75%' } : styles.col2}>
+              <View style={styles.col2}>
                 <Text style={styles.tableCell}>{item.productName}</Text>
                 {item.description && (
                   <Text style={styles.itemDescription}>{item.description}</Text>
                 )}
               </View>
-              <Text style={[styles.tableCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>{item.quantity} {item.unit}</Text>
-              {!data.hideItemPrices && (
-                <>
-                  <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
-                  <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
-                </>
-              )}
+              <Text style={[styles.tableCell, styles.col3]}>{item.quantity} {item.unit}</Text>
+              <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
+              <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
             </View>
           ))}
         </View>
@@ -447,4 +420,4 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
   );
 };
 
-export default QuotationPDF;
+export default InvoicePDF;

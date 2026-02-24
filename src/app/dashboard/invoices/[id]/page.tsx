@@ -118,6 +118,28 @@ export default function InvoiceDetailPage() {
     });
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await fetch(`/api/invoices/${params.id}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${invoice?.invoiceNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        toast.error('Error downloading PDF');
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Error downloading PDF');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
@@ -190,7 +212,7 @@ export default function InvoiceDetailPage() {
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
-            <Button>
+            <Button onClick={handleDownloadPDF}>
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>

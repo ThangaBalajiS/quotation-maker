@@ -3,12 +3,12 @@ import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
-import Quotation from '@/models/Quotation';
+import Invoice from '@/models/Invoice';
 import User from '@/models/User';
 import Customer from '@/models/Customer';
 import BrandImage from '@/models/BrandImage';
 import { pdf } from '@react-pdf/renderer';
-import QuotationPDF from '@/components/pdf/QuotationPDF';
+import InvoicePDF from '@/components/pdf/InvoicePDF';
 
 export async function GET(
   request: NextRequest,
@@ -23,15 +23,15 @@ export async function GET(
     const { id } = await params;
     await connectDB();
 
-    // Fetch quotation
-    const quotation = await Quotation.findOne({
+    // Fetch invoice
+    const invoice = await Invoice.findOne({
       _id: id,
       tenantId: session.user.tenantId,
     });
 
-    if (!quotation) {
+    if (!invoice) {
       return NextResponse.json(
-        { error: 'Quotation not found' },
+        { error: 'Invoice not found' },
         { status: 404 }
       );
     }
@@ -58,7 +58,7 @@ export async function GET(
     };
 
     // Fetch customer GST number
-    const customer = await Customer.findById(quotation.customerId).select('gstNumber').lean() as { gstNumber?: string } | null;
+    const customer = await Customer.findById(invoice.customerId).select('gstNumber').lean() as { gstNumber?: string } | null;
 
     // Fetch brand images for PDF
     const brandImages = await BrandImage.find({ tenantId: session.user.tenantId })
@@ -68,19 +68,18 @@ export async function GET(
 
     // Prepare data for PDF
     const pdfData = {
-      quotationNumber: quotation.quotationNumber,
-      date: quotation.createdAt,
-      customerName: quotation.customerName,
-      customerAddress: formatAddress(quotation.customerAddress),
+      invoiceNumber: invoice.invoiceNumber,
+      date: invoice.createdAt,
+      dueDate: invoice.dueDate,
+      customerName: invoice.customerName,
+      customerAddress: formatAddress(invoice.customerAddress),
       customerGstNumber: customer?.gstNumber,
-      // workDescription: 'Professional Services', // You can customize this
-      items: quotation.items,
-      subtotal: quotation.subtotal,
-      taxAmount: quotation.taxAmount,
-      total: quotation.total,
-      notes: quotation.notes,
-      terms: quotation.terms,
-      hideItemPrices: quotation.hideItemPrices || false,
+      items: invoice.items,
+      subtotal: invoice.subtotal,
+      taxAmount: invoice.taxAmount,
+      total: invoice.total,
+      notes: invoice.notes,
+      terms: invoice.terms,
       brandImages: brandImages.map((img) => img.imageUrl),
       businessDetails: {
         businessName: user.businessDetails?.businessName || 'Your Business Name',
@@ -96,14 +95,14 @@ export async function GET(
     };
 
     // Generate PDF
-    const pdfDoc = pdf(<QuotationPDF data={pdfData} />);
+    const pdfDoc = pdf(<InvoicePDF data={pdfData} />);
     const pdfStream = await pdfDoc.toBlob();
 
     // Return PDF as response
     return new NextResponse(pdfStream, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="quotation-${quotation.quotationNumber}.pdf"`,
+        'Content-Disposition': `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`,
       },
     });
   } catch (error) {
