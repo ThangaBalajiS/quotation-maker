@@ -277,9 +277,9 @@ const InvoicePDF: React.FC<{ data: InvoiceData }> = ({ data }) => {
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={styles.page} wrap>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.header} wrap={false}>
           <View style={styles.companySection}>
             <Text style={styles.companyName}>{data.businessDetails.businessName}</Text>
             {data.businessDetails.contactPerson && (
@@ -313,7 +313,7 @@ const InvoicePDF: React.FC<{ data: InvoiceData }> = ({ data }) => {
         </View>
 
         {/* Customer Section */}
-        <View style={styles.customerSection}>
+        <View style={styles.customerSection} wrap={false}>
           <Text style={styles.sectionTitle}>Bill To,</Text>
           <Text style={styles.customerName}>{data.customerName}</Text>
           {data.customerAddress && (
@@ -325,32 +325,30 @@ const InvoicePDF: React.FC<{ data: InvoiceData }> = ({ data }) => {
         </View>
 
         {/* Items Table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
-            <Text style={[styles.tableHeaderCell, styles.col2]}>DESCRIPTION</Text>
-            <Text style={[styles.tableHeaderCell, styles.col3]}>QTY</Text>
-            <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
-            <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
-          </View>
-          {data.items.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
-              <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
-              <View style={styles.col2}>
-                <Text style={styles.tableCell}>{item.productName}</Text>
-                {item.description && (
-                  <Text style={styles.itemDescription}>{item.description}</Text>
-                )}
-              </View>
-              <Text style={[styles.tableCell, styles.col3]}>{item.quantity} {item.unit}</Text>
-              <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
-              <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
-            </View>
-          ))}
+        <View style={styles.tableHeader} wrap={false} minPresenceAhead={50}>
+          <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
+          <Text style={[styles.tableHeaderCell, styles.col2]}>DESCRIPTION</Text>
+          <Text style={[styles.tableHeaderCell, styles.col3]}>QTY</Text>
+          <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
+          <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
         </View>
+        {data.items.map((item, index) => (
+          <View key={index} style={styles.tableRow} wrap={false}>
+            <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
+            <View style={styles.col2}>
+              <Text style={styles.tableCell}>{item.productName}</Text>
+              {item.description && (
+                <Text style={styles.itemDescription}>{item.description}</Text>
+              )}
+            </View>
+            <Text style={[styles.tableCell, styles.col3]}>{item.quantity} {item.unit}</Text>
+            <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
+            <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
+          </View>
+        ))}
 
         {/* Summary */}
-        <View style={styles.summarySection}>
+        <View style={styles.summarySection} wrap={false}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>SUB TOTAL:</Text>
@@ -367,7 +365,7 @@ const InvoicePDF: React.FC<{ data: InvoiceData }> = ({ data }) => {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={styles.footer} wrap={false}>
           <View style={styles.paymentSection}>
             <Text style={styles.paymentTitle}>Payment Instructions</Text>
             <Text style={styles.paymentInfo}>Acc. Name: {data.businessDetails.bankDetails?.accountName || data.businessDetails.businessName}</Text>

@@ -15,7 +15,7 @@ export async function GET() {
     await connectDB();
 
     const products = await Product.find({ tenantId: session.user.tenantId })
-      .sort({ createdAt: -1 });
+      .sort({ name: 1 });
 
     return NextResponse.json(products);
   } catch (error) {

@@ -294,9 +294,9 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={styles.page} wrap>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.header} wrap={false}>
           <View style={styles.companySection}>
             <Text style={styles.companyName}>{data.businessDetails.businessName}</Text>
             {data.businessDetails.contactPerson && (
@@ -329,7 +329,7 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         </View>
 
         {/* Customer Section */}
-        <View style={styles.customerSection}>
+        <View style={styles.customerSection} wrap={false}>
           <Text style={styles.sectionTitle}>To,</Text>
           {data.workDescription && (
             <Text style={styles.workDescription}>{data.workDescription}</Text>
@@ -344,40 +344,38 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         </View>
 
         {/* Items Table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
-            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '75%' } : styles.col2]}>DESCRIPTION</Text>
-            <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>QTY</Text>
+        <View style={styles.tableHeader} wrap={false} minPresenceAhead={50}>
+          <Text style={[styles.tableHeaderCell, styles.col1]}>#</Text>
+          <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '75%' } : styles.col2]}>DESCRIPTION</Text>
+          <Text style={[styles.tableHeaderCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>QTY</Text>
+          {!data.hideItemPrices && (
+            <>
+              <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
+              <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
+            </>
+          )}
+        </View>
+        {data.items.map((item, index) => (
+          <View key={index} style={styles.tableRow} wrap={false}>
+            <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
+            <View style={data.hideItemPrices ? { width: '75%' } : styles.col2}>
+              <Text style={styles.tableCell}>{item.productName}</Text>
+              {item.description && (
+                <Text style={styles.itemDescription}>{item.description}</Text>
+              )}
+            </View>
+            <Text style={[styles.tableCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>{item.quantity} {item.unit}</Text>
             {!data.hideItemPrices && (
               <>
-                <Text style={[styles.tableHeaderCell, styles.col4]}>PRICE</Text>
-                <Text style={[styles.tableHeaderCell, styles.col5]}>TOTAL</Text>
+                <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
+                <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
               </>
             )}
           </View>
-          {data.items.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
-              <Text style={[styles.tableCell, styles.col1]}>{index + 1}</Text>
-              <View style={data.hideItemPrices ? { width: '75%' } : styles.col2}>
-                <Text style={styles.tableCell}>{item.productName}</Text>
-                {item.description && (
-                  <Text style={styles.itemDescription}>{item.description}</Text>
-                )}
-              </View>
-              <Text style={[styles.tableCell, data.hideItemPrices ? { width: '17%' } : styles.col3]}>{item.quantity} {item.unit}</Text>
-              {!data.hideItemPrices && (
-                <>
-                  <Text style={[styles.tableCell, styles.col4]}>{formatCurrency(item.price)}</Text>
-                  <Text style={[styles.tableCell, styles.col5]}>{formatCurrency(item.total)}</Text>
-                </>
-              )}
-            </View>
-          ))}
-        </View>
+        ))}
 
         {/* Summary */}
-        <View style={styles.summarySection}>
+        <View style={styles.summarySection} wrap={false}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>SUB TOTAL:</Text>
@@ -394,7 +392,7 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={styles.footer} wrap={false}>
           <View style={styles.paymentSection}>
             <Text style={styles.paymentTitle}>Payment Instructions</Text>
             <Text style={styles.paymentInfo}>Acc. Name: {data.businessDetails.bankDetails?.accountName || data.businessDetails.businessName}</Text>
