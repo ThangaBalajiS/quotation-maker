@@ -12,6 +12,7 @@ export interface IUser extends Document {
     address?: string;
     logo?: string;
     signature?: string;
+    invoiceNumber?: string;
     phone?: string;
     landline?: string;
     email?: string;
@@ -70,6 +71,10 @@ const UserSchema = new Schema<IUser>({
       default: '',
     },
     signature: {
+      type: String,
+      default: '',
+    },
+    invoiceNumber: {
       type: String,
       default: '',
     },

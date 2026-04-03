@@ -1,4 +1,4 @@
-# Quotation Maker
+# Paari Quotes
 
 A multi-tenant Next.js application for creating and managing quotations and invoices for businesses.
 

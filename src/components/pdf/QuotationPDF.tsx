@@ -414,14 +414,18 @@ const QuotationPDF: React.FC<{ data: QuotationData }> = ({ data }) => {
               For, {data.businessDetails.businessName}
             </Text>
             {data.businessDetails.signature ? (
-              <Image 
-                style={styles.signatureImage} 
-                src={data.businessDetails.signature} 
-              />
+              <>
+                <Image 
+                  style={styles.signatureImage} 
+                  src={data.businessDetails.signature} 
+                />
+                <Text style={styles.signatureLabel}>AUTHORIZED SIGNATURE</Text>
+              </>
             ) : (
-              <View style={styles.signatureLine} />
+              <Text style={{ fontSize: 10, fontWeight: 'bold', paddingTop: 20, paddingBottom: 5, color: '#374151' }}>
+                {data.businessDetails.contactPerson || data.businessDetails.businessName}
+              </Text>
             )}
-            <Text style={styles.signatureLabel}>AUTHORIZED SIGNATURE</Text>
           </View>
         </View>
 

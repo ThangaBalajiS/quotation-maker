@@ -7,12 +7,16 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Package, FileText, Receipt } from 'lucide-react';
+import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
+import DashboardJoyride from '@/components/dashboard/DashboardJoyride';
 
-interface DashboardStats {
+export interface DashboardStats {
   customers: { count: number; change: number };
   products: { count: number; change: number };
   quotations: { count: number; change: number };
   invoices: { count: number; change: number };
+  presets: { count: number };
+  hasSettings: boolean;
 }
 
 export default function Dashboard() {
@@ -88,6 +92,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      <DashboardJoyride />
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
@@ -98,8 +103,11 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* Onboarding Checklist */}
+        {stats && <OnboardingChecklist stats={stats} />}
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4" id="stats-overview">
           {statCards.map((stat) => (
             <Card key={stat.name}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -149,7 +157,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <Card>
+          <Card id="quick-actions-card">
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
               <CardDescription>

@@ -4,6 +4,7 @@ import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Invoice, { IInvoiceItem } from '@/models/Invoice';
+import User from '@/models/User';
 
 export async function GET() {
   try {
@@ -47,8 +48,30 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     // Generate invoice number
-    const count = await Invoice.countDocuments({ tenantId: session.user.tenantId });
-    const invoiceNumber = `INV-${String(count + 1).padStart(4, '0')}`;
+    const user = await User.findOne({ tenantId: session.user.tenantId });
+    let baseInvoiceNumber = user?.businessDetails?.invoiceNumber || 'INV-0001';
+    
+    // Ensure it ends with a number
+    if (!/\d+$/.test(baseInvoiceNumber)) {
+       baseInvoiceNumber += '-0001';
+    }
+    
+    let invoiceNumber = '';
+    const match = baseInvoiceNumber.match(/(\d+)$/);
+    if (match) {
+        const numStr = match[1];
+        const baseNum = parseInt(numStr, 10);
+        const prefix = baseInvoiceNumber.substring(0, baseInvoiceNumber.length - numStr.length);
+        
+        const count = await Invoice.countDocuments({ tenantId: session.user.tenantId });
+        const nextNum = baseNum + count;
+        
+        invoiceNumber = `${prefix}${String(nextNum).padStart(numStr.length, '0')}`;
+    } else {
+        // Fallback, though the regex test above prevents this
+        const count = await Invoice.countDocuments({ tenantId: session.user.tenantId });
+        invoiceNumber = `INV-${String(count + 1).padStart(4, '0')}`;
+    }
 
     // Calculate totals (respect includeGst flag)
     const subtotal = items.reduce((sum: number, item: IInvoiceItem) => sum + (item.price * item.quantity), 0);

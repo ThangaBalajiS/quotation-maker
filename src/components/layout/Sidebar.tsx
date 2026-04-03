@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold text-white">Quotation Maker</h1>
+            <h1 className="text-xl font-bold text-white">Paari Quotes</h1>
             <button
               onClick={onClose}
               className="lg:hidden text-gray-300 hover:text-white"
@@ -69,6 +69,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   key={item.name}
                   href={item.href}
                   onClick={onClose}
+                  id={`nav-${item.name.toLowerCase()}`}
                   className={cn(
                     'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
                     isActive

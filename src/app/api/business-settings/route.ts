@@ -37,7 +37,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { businessName, gstNumber, phone, email, address, logo, signature, bankDetails } = body;
+    const { businessName, gstNumber, phone, email, address, logo, signature, invoiceNumber, bankDetails } = body;
     
 
     if (!businessName) {
@@ -60,6 +60,7 @@ export async function PUT(request: NextRequest) {
           'businessDetails.address': address,
           'businessDetails.logo': logo,
           'businessDetails.signature': signature,
+          'businessDetails.invoiceNumber': invoiceNumber,
           'businessDetails.bankDetails': bankDetails,
         },
       },

@@ -32,6 +32,7 @@ export default function SettingsPage() {
     address: '',
     logo: '',
     signature: '',
+    invoiceNumber: '',
     accountName: '',
     accountNumber: '',
     ifscCode: '',
@@ -70,6 +71,7 @@ export default function SettingsPage() {
             address: data.businessDetails.address || '',
             logo: data.businessDetails.logo || '',
             signature: data.businessDetails.signature || '',
+            invoiceNumber: data.businessDetails.invoiceNumber || '',
             accountName: data.businessDetails.bankDetails?.accountName || '',
             accountNumber: data.businessDetails.bankDetails?.accountNumber || '',
             ifscCode: data.businessDetails.bankDetails?.ifscCode || '',
@@ -87,6 +89,13 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form Validation for invoiceNumber pattern
+    if (formData.invoiceNumber && !/\d+$/.test(formData.invoiceNumber)) {
+      toast.error('Invoice number must end with a number. (e.g. INV-0001)');
+      return;
+    }
+
     setSaving(true);
 
     const promise = new Promise(async (resolve, reject) => {
@@ -99,6 +108,7 @@ export default function SettingsPage() {
           address: formData.address || undefined,
           logo: formData.logo || undefined,
           signature: formData.signature || undefined,
+          invoiceNumber: formData.invoiceNumber || undefined,
           bankDetails: {
             accountName: formData.accountName || undefined,
             accountNumber: formData.accountNumber || undefined,
@@ -317,6 +327,17 @@ export default function SettingsPage() {
                     value={formData.gstNumber}
                     onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Base Invoice Number
+                  </label>
+                  <Input
+                    value={formData.invoiceNumber}
+                    onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                    placeholder="e.g. INV-0001"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Must end with a number for incrementing</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

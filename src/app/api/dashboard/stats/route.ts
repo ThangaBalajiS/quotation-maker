@@ -6,6 +6,8 @@ import Customer from '@/models/Customer';
 import Product from '@/models/Product';
 import Quotation from '@/models/Quotation';
 import Invoice from '@/models/Invoice';
+import Preset from '@/models/Preset';
+import User from '@/models/User';
 
 export async function GET() {
     try {
@@ -19,12 +21,16 @@ export async function GET() {
         // Get counts for the current user's tenant
         const tenantId = session.user.tenantId;
 
-        const [customersCount, productsCount, quotationsCount, invoicesCount] = await Promise.all([
+        const [customersCount, productsCount, quotationsCount, invoicesCount, presetsCount, user] = await Promise.all([
             Customer.countDocuments({ tenantId }),
             Product.countDocuments({ tenantId }),
             Quotation.countDocuments({ tenantId }),
             Invoice.countDocuments({ tenantId }),
+            Preset.countDocuments({ tenantId }),
+            User.findOne({ tenantId })
         ]);
+        
+        const hasSettings = !!user?.businessDetails?.businessName;
 
         // Get counts from last month for comparison
         const lastMonth = new Date();
@@ -65,6 +71,10 @@ export async function GET() {
                 count: invoicesCount,
                 change: calcChange(invoicesCount, invoicesLastMonth),
             },
+            presets: {
+                count: presetsCount,
+            },
+            hasSettings,
         });
     } catch (error) {
         console.error('Dashboard stats error:', error);
