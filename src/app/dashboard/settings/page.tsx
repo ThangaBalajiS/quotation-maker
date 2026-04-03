@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import imageCompression from 'browser-image-compression';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,8 +137,19 @@ export default function SettingsPage() {
   };
 
   const handleFileUpload = async (file: File, type: 'logo' | 'signature') => {
+    let compressedFile = file;
+    try {
+      const options = {
+        maxWidthOrHeight: 300,
+        useWebWorker: true,
+      };
+      compressedFile = await imageCompression(file, options);
+    } catch (error) {
+      console.error('Error compressing image:', error);
+    }
+
     const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
+    formDataUpload.append('file', compressedFile);
     formDataUpload.append('type', type);
 
     const promise = new Promise(async (resolve, reject) => {
@@ -466,69 +478,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Brand Images */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <ImageIcon className="h-5 w-5 mr-2" />
-                Brand Images
-              </CardTitle>
-              <CardDescription>
-                Upload images to display at the end of quotation PDFs. Images must be 500×500 pixels or smaller.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {brandImages.map((img) => (
-                  <div key={img._id} className="relative group">
-                    <Image
-                      src={img.imageUrl}
-                      alt="Brand Image"
-                      width={150}
-                      height={150}
-                      className="object-contain border rounded w-full h-auto"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteBrandImage(img._id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {/* Upload new brand image */}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleBrandImageUpload(file);
-                      e.target.value = '';
-                    }}
-                    className="hidden"
-                    id="brand-image-upload"
-                    disabled={uploadingBrandImage}
-                  />
-                  <label
-                    htmlFor="brand-image-upload"
-                    className="flex flex-col items-center justify-center w-full h-[150px] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
-                  >
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500">
-                      {uploadingBrandImage ? 'Uploading...' : 'Add Image'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">
-                These images will appear at the end of your quotation PDFs.
-              </p>
-            </CardContent>
-          </Card>
+
 
           {/* Bank Details */}
           <Card>
