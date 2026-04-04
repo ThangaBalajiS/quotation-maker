@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Paari Quotes",
+  title: "T10i Quotes",
   description: "Multi-tenant quotation and invoice management system",
 };
 

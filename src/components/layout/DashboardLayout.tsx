@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">Paari Quotes</h1>
+            <h1 className="text-lg font-semibold text-gray-900">T10i Quotes</h1>
             <div className="w-6" /> {/* Spacer for centering */}
           </div>
         </div>

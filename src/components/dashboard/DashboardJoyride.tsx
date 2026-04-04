@@ -21,7 +21,7 @@ export default function DashboardJoyride() {
   const steps: Step[] = [
     {
       target: 'body',
-      content: "Welcome to Paari Quotes! Let's take a quick tour to get you started.",
+      content: "Welcome to T10i Quotes! Let's take a quick tour to get you started.",
       placement: 'center',
       skipBeacon: true,
     },

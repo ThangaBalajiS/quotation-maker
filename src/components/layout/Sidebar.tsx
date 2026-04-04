@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold text-white">Paari Quotes</h1>
+            <h1 className="text-xl font-bold text-white">T10i Quotes</h1>
             <button
               onClick={onClose}
               className="lg:hidden text-gray-300 hover:text-white"
